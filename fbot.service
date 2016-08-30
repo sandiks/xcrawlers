@@ -1,0 +1,8 @@
+[Unit]
+Description=fbot parser
+
+[Service]
+User=kilk
+Restart=always
+RestartSec=1800s
+ExecStart=/home/kilk/fbot_runner.sh

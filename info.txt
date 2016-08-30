@@ -1,0 +1,12 @@
+postgres:12345
+
+---
+2 rsdn  20
+3 lor		50
+4 gamedev 20
+5 onliner.by 20
+6 sql.ru 25
+7 dxdy
+8 damagelab
+9 bitcointalk.org
+
