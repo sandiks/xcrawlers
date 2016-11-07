@@ -12,7 +12,7 @@ when 'all'
 when 'df'
   if need_parse_forum(first,3)
     p "download lor forum fid=#{first}"
-    LORParser.parse_forum(first, true)
+    LORParser.parse_forum(first)
     p "finished lor :df fid:#{first}"
   end
 

@@ -182,7 +182,7 @@ class Repo
     count
   end
   def self.get_psize(sid=0)
-    posts_on_page_sites=[0,20,20,50,20,20,25]
+    posts_on_page_sites=[0,20,20,50,20,20,25,77,88,99,20]
     posts_on_page_sites[sid]
   end
 
@@ -231,14 +231,14 @@ class Repo
 
   end
 
-  def self.calc_last_page(responses, posts_on_page=50)
+  def self.calc_last_page(responses, page_size=50)
     return [1,1] if responses == 0
 
-    post_count = (responses)%posts_on_page
-    post_count =posts_on_page if post_count ==0
+    post_count = (responses)%page_size
+    post_count =page_size if post_count ==0
 
-    page = (responses)/posts_on_page+1
-    page-=1 if post_count==posts_on_page
+    page = (responses)/page_size+1
+    page-=1 if post_count==page_size
 
     [page,post_count]
   end

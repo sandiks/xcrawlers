@@ -23,12 +23,12 @@ class RsnParser
 
   def self.parse_forum(fid, need_parse_threads=false)
 
-    p "rsn parse_forum fid:#{fid} #{need_parse_threads}"
+    p "[rsdn.org] parse_forum fid:#{fid}"
 
     page_threads=[]
 
     start = 1 #1,21,41,...
-    url  ="http://rsdn.ru/Forum/MsgList.aspx?gid=#{fid}&start=#{start}&flat=0&rate=0&IsFAQ=0"
+    url  ="http://rsdn.org/Forum/MsgList.aspx?gid=#{fid}&start=#{start}&flat=0&rate=0&IsFAQ=0"
     page_threads += get_forum_threads(fid, url)
 		
 		#page_threads.map { |tt| p tt[:title] }
@@ -127,7 +127,7 @@ class RsnParser
 
   def self.parse_thread(url, page=1)
 
-    url = "http://rsdn.ru#{url}"
+    url = "http://rsdn.org#{url}"
 
     tid = smid_from_url(url)
 
@@ -199,7 +199,7 @@ class RsnParser
 
 
   def self.find_user_posts(uid,sp,ep)
-    url="http://rsdn.ru/Forum/MsgUList.aspx?uid=98012&start=1"
+    url="http://rsdn.org/Forum/MsgUList.aspx?uid=98012&start=1"
   end
 
   def self.show_forums
@@ -218,4 +218,4 @@ class RsnParser
 end
 
 #RsnParser.parse_thread_by_tid_page(6194527)
-#RsnParser.parse_forum(84)
+#RsnParser.parse_forum(15)

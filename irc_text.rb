@@ -3,7 +3,7 @@ require_relative  'repo'
 def get_thread_link(sid, fname, tid)
   case sid
   when 2
-    "http://rsdn.ru/forum/#{fname}/#{tid}.flat.1"
+    "http://rsdn.org/forum/#{fname}/#{tid}.flat.1"
   when 3
     "http://www.linux.org.ru/forum/#{fname}/#{tid}"
   when 4
@@ -14,6 +14,8 @@ def get_thread_link(sid, fname, tid)
     "http://dxdy.ru/topic#{tid}.html"
   when 8
     "https://damagelab.org/index.php?showtopic=#{tid}"
+  when 9
+    "https://bitcointalk.org/index.php?topic=#{tid}.0"
   end
 end
 DB = Repo.get_db
@@ -45,4 +47,4 @@ def search(ss)
 
 end
 
-search("ubuntu")
+#search("ubuntu")

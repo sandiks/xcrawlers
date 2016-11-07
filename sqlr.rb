@@ -27,8 +27,3 @@ when 'dt'
   end
 end
 
-def show_tor
-  t=Tor.new
-  ip = t.get_current_ip_address #t.get_new_ip
-  p "current tor ip #{ip}"
-end

@@ -2,10 +2,12 @@
  
  site crawler
 
+dxdy.ru Powered by phpBB
+bitcointalk.org Powered by SMF 1.1.19
 ## Installation
 
 1. bundle install
-2. to run crawler execute $ ./bot.rb all 
+2. to run crawler execute "ruby bot.rb all" 
 
 
 ## Development
