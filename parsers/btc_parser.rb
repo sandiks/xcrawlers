@@ -16,8 +16,8 @@ class BCTalkParser
 
     link ="https://bitcointalk.org/index.php"
 
-    #page = Nokogiri::HTML(download_page(link))
-    page = Nokogiri::HTML(File.open("bctalk_main.html"))
+    page = Nokogiri::HTML(download_page(link))
+    #page = Nokogiri::HTML(File.open("bctalk_main.html"))
 
     cats = page.css("div#bodyarea > div > table  > tr")
     #p cats.map { |tr| tr.css("td:nth-child(2) > b > a").text }
@@ -58,8 +58,6 @@ class BCTalkParser
         #p "--------forum0 #{forum0[:descr]}"
         #subforums[0..4].each{|ff1| p ff1 }
       end
-
-
     end
   end
 

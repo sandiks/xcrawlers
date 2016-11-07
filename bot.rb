@@ -7,6 +7,7 @@ require_relative  'parsers/gamedev_parser'
 require_relative  'parsers/dxdy_parser'
 require_relative  'parsers/damagelab_parser'
 require_relative  'parsers/btc_parser'
+require_relative  'parsers/4pda_parser'
 
 #@@db = Sequel.connect('postgres://postgres:12345@localhost:5432/fbot')
 
@@ -27,10 +28,14 @@ case site
 when 'all'
   RsnParser.check_forums rescue "RsnParser:error"
   LORParser.check_forums rescue "LORParser:error"
-  SqlrParser.check_forums rescue "SqlrParser:error"
-  DXDYParser.check_forums rescue "DXDYParser:error"
-  DamageLabParser.check_forums rescue "DamageLabParser:error"
-  BCTalkParser.check_forums rescue "BCTalkParser:error"
+  #SqlrParser.check_forums rescue "SqlrParser:error"
+  #DXDYParser.check_forums rescue "DXDYParser:error"
+  #DamageLabParser.check_forums rescue "DamageLabParser:error"
+  #BCTalkParser.check_forums rescue "BCTalkParser:error"
+
+  #FpdaParser.check_selected_threads rescue "4PDAParser:error"
+  FpdaParser.check_forums rescue "4PDAParser:error"
+  
 when 'rsn'
   RsnParser.check_forums
 when 'lor'
@@ -45,6 +50,8 @@ when 'damagelab'
   DamageLabParser.check_forums
 when 'bctalk'
   BCTalkParser.check_forums
+when '4pda'
+  FpdaParser.check_selected_threads
 
 when 'shedule-pt'
   # ruby bot.rb shedule-pt 60

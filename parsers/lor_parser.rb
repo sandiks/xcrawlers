@@ -46,7 +46,7 @@ class LORParser
   def self.parse_forum(fid, pg=1, need_parse_threads=false)
 
     fname = Repo.get_forum_name(fid,3)
-    page_link = pg==1?"" : "/?offset=#{(pg-1)*30}"
+    page_link = (pg==1 ? "" : "/?offset=#{(pg-1)*30}")
 
     p link = "http://www.linux.org.ru/forum/#{fname}#{page_link}"
 

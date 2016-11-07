@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.1
--- Dumped by pg_dump version 9.5.1
+-- Dumped from database version 9.5.4
+-- Dumped by pg_dump version 9.5.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -28,38 +28,6 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 SET search_path = public, pg_catalog;
-
---
--- Name: footgun(text, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION footgun(_schema text, _parttionbase text) RETURNS void
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    row     record;
-BEGIN
-    FOR row IN 
-        SELECT
-            table_schema,
-            table_name
-        FROM
-            information_schema.tables
-        WHERE
-            table_type = 'BASE TABLE'
-        AND
-            table_schema = _schema
-        AND
-            table_name ILIKE (_parttionbase || '%')
-    LOOP
-        EXECUTE 'DROP TABLE ' || quote_ident(row.table_schema) || '.' || quote_ident(row.table_name);
-        RAISE INFO 'Dropped table: %', quote_ident(row.table_schema) || '.' || quote_ident(row.table_name);
-    END LOOP;
-END;
-$$;
-
-
-ALTER FUNCTION public.footgun(_schema text, _parttionbase text) OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -125,7 +93,8 @@ CREATE TABLE posts (
     tid integer NOT NULL,
     first integer DEFAULT 0,
     title character varying,
-    marks character varying
+    marks character varying,
+    pnum integer
 );
 
 
@@ -171,7 +140,9 @@ CREATE TABLE threads (
     viewers integer,
     responses integer,
     descr character(100),
-    bot_updated timestamp with time zone
+    bot_updated timestamp with time zone,
+    sticked integer,
+    bot_tracked integer
 );
 
 

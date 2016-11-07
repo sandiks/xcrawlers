@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    cinch (2.3.2)
     domain_name (0.5.20160615)
       unf (>= 0.0.5, < 1.0.0)
     http-cookie (1.0.2)
@@ -25,6 +26,7 @@ GEM
     parallel (1.9.0)
     pg (0.18.4)
     pkg-config (1.1.7)
+    rufus-scheduler (3.2.2)
     sequel (4.35.0)
     socksify (1.7.0)
     unf (0.1.4)
@@ -36,12 +38,14 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  cinch
   mechanize
   nokogiri
   parallel
   pg
+  rufus-scheduler
   sequel
   socksify
 
 BUNDLED WITH
-   1.12.5
+   1.13.2

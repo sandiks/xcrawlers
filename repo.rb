@@ -139,17 +139,25 @@ class Repo
     count
   end
 
-  def self.insert_or_update_threads_for_forum(threads,sid=0)
+  def self.insert_or_update_threads_for_forum(threads,sid=0, full_update=false)
 
     count=0
     @@db.transaction do
 
       threads.each do |tt|
         begin
+
           rec = @@db[:threads].filter(siteid:sid, tid: tt[:tid])
-          if 1 != rec.update(responses: tt[:responses],updated: tt[:updated])
+          upd_result = if full_update 
+           rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], updated: tt[:updated])
+          else 
+            rec.update(responses: tt[:responses], updated: tt[:updated])
+          end
+
+          if upd_result != 1
             @@db[:threads].insert(tt)
           end
+
         rescue =>ex
           puts "[error:insert_or_update_threads_for_forum tid:#{tt[:tid]}] #{ex.message}"
         end
@@ -182,7 +190,7 @@ class Repo
     count
   end
   def self.get_psize(sid=0)
-    posts_on_page_sites=[0,20,20,50,20,20,25]
+    posts_on_page_sites=[0,20,20,50,20,20,25,77,88,99,20]
     posts_on_page_sites[sid]
   end
 
@@ -231,14 +239,14 @@ class Repo
 
   end
 
-  def self.calc_last_page(responses, posts_on_page=50)
+  def self.calc_last_page(responses, page_size=50)
     return [1,1] if responses == 0
 
-    post_count = (responses)%posts_on_page
-    post_count =posts_on_page if post_count ==0
+    post_count = (responses)%page_size
+    post_count =page_size if post_count ==0
 
-    page = (responses)/posts_on_page+1
-    page-=1 if post_count==posts_on_page
+    page = (responses)/page_size+1
+    page-=1 if post_count==page_size
 
     [page,post_count]
   end

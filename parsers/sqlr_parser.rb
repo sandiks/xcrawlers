@@ -10,11 +10,17 @@ class SqlrParser
 
   @@db = Repo.get_db
   @@sid = 6
+
+
+  def self.downl(link)
+    download_page(link,true) #use tor
+  end
+
   def self.list_forums
 
     link ="http://www.sql.ru/forum"
 
-    page = Nokogiri::HTML(download_page(link))
+    page = Nokogiri::HTML(downl(link))
     #page = Nokogiri::HTML(File.open("allforums.html"))
 
     cats = page.css("table.forumTable tr") #forums
@@ -52,11 +58,12 @@ class SqlrParser
 
     #fid = SqlrHelper.get_forum_id(fname)
     fname = Repo.get_forum_name(fid,@@sid)
+    p "[sql.ru] parse_forum fid:#{fname}"
     fpg = 1
 
     link = "http://www.sql.ru/forum/#{fname}" + (fpg >1 ? "/#{fpg}" : "")
 
-    page_noko = Nokogiri::HTML(download_page(link))
+    page_noko = Nokogiri::HTML(downl(link))
 
     threads = page_noko.css("table.forumTable tr")
 
@@ -92,7 +99,7 @@ class SqlrParser
       tid = thr[:tid]
       ind = thr[:ind]
 
-      next if ind<5 || ind>last_index
+      next if ind<3 || ind>last_index
 
       resps=thr[:responses]
       page = Repo.calc_page(tid,resps+1,@@sid)
@@ -120,9 +127,7 @@ class SqlrParser
     pp = "-#{page}" if page >1
 
     link = "http://www.sql.ru/forum/#{tid}#{pp}#{title}"
-
-    html = download_page(link)
-    page_noko = Nokogiri::HTML(html) rescue "error link: #{link}"
+    page_noko = Nokogiri::HTML(downl(link)) rescue "error link: #{link}"
 
     posts = get_thread_page_posts(page_noko,tid)
 
@@ -215,7 +220,7 @@ class SqlrParser
 
     last = Repo.calc_last_page(resps,25)[0]
 
-    Parallel.each((1..last),:in_threads=>3) do |page|
+    Parallel.each( last.downto(1).to_a, :in_threads=>3) do |page|
       if pages[page]!=25 && page !=last
         p "load page #{page}"
         parse_thread("", tid, page)
@@ -246,15 +251,13 @@ class SqlrParser
 
 end
 
-
-#show_tor
-#SqlrParser.parse_forum(16,true,50)
+#SqlrParser.parse_forum(16,true,20)
 #p Repo.calc_page(1212142,182,6)
-#SqlrParser.parse_thread("",686184,1)
+#SqlrParser.parse_thread("",1145993,1)
 
 def load_full_thread
-  url = "http://www.sql.ru/forum/1202487-111/uchastok-dedy"
-  title = "Участок деды"
+  url = "http://www.sql.ru/forum/1145993-807"
+  title = ""
 
   tid,pg = SqlrHelper.get_tid_pg(url)
   p "tid:#{tid} pg:#{pg}"
@@ -264,3 +267,11 @@ def load_full_thread
   SqlrParser.load_full_thread(tid,title,descr,resps)
 end
 #load_full_thread
+
+
+def show_tor
+  t=Tor.new
+  ip = t.get_current_ip_address #t.get_new_ip
+  p "current tor ip #{ip}"
+end
+#show_tor
