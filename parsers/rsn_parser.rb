@@ -7,16 +7,16 @@ require_relative  '../repo'
 require_relative  '../cmd_helper'
 
 class RsnParser
-
-  @@db = Repo.get_db
+  SID=2
+  DB = Repo.get_db
 
   def self.check_forums(need_parse_threads=false)
 
-    forums = @@db[:forums].filter(siteid:2,check: 1).all
+    forums = DB[:forums].filter(siteid:SID,check: 1).all
 
     Parallel.map(forums,:in_threads=>3) do |ff|
     #forums.each do |ff|
-      parse_forum(ff[:fid], need_parse_threads) if need_parse_forum(ff[:fid],2) rescue puts "error[RsnParser] check forum #{ff[:fid]}"
+      parse_forum(ff[:fid], need_parse_threads) if need_parse_forum(ff[:fid],SID) #rescue puts "error[RsnParser] check forum #{ff[:fid]}"
 
     end
   end
@@ -43,9 +43,9 @@ class RsnParser
       #next if not tid==10856785
 
       resps=thr[:responses]+1
-      page = Repo.calc_page(tid,resps,2)
+      page = Repo.calc_page(tid,resps,SID)
 
-      thread_pages = @@db[:tpages].filter(siteid:2, tid:tid).map([:page,:postcount])
+      thread_pages = DB[:tpages].filter(siteid:2, tid:tid).map([:page,:postcount])
 
       inserted = parse_thread(thr[:descr], page) if page>0
 
@@ -82,7 +82,7 @@ class RsnParser
       #p "#{smid} #{updated_at}"
 
       topics << {
-        siteid:2,
+        siteid:SID,
         fid:fid,
         tid:smid,
         title:title,
@@ -95,7 +95,7 @@ class RsnParser
     topics
   end
   def self.parse_thread_by_tid_page(tid, page=1)
-    fname = Repo.get_forum_name_by_tid(tid,2)
+    fname = Repo.get_forum_name_by_tid(tid,SID)
     link ="/forum/#{fname}/#{tid}.flat.#{page}"
     inserted = parse_thread(link)
 
@@ -103,12 +103,12 @@ class RsnParser
   end
 
   def self.parse_full_thread(tid)
-    fname = Repo.get_forum_name_by_tid(tid,2)
-    thr = Repo.get_thread(tid,2)
+    fname = Repo.get_forum_name_by_tid(tid,SID)
+    thr = Repo.get_thread(tid,SID)
 
     resps=thr[:responses]+1
     last_page, last_page_post_count = Repo.calc_last_page(resps,20)
-    tpages = Repo.get_tpages(tid,2)
+    tpages = Repo.get_tpages(tid,SID)
 
     urls=[]
     for pp in 1..(last_page-1)
@@ -138,9 +138,9 @@ class RsnParser
 
     #p posts.map{|el| el[:addedby]}
 
-    inserted = Repo.insert_posts(posts, tid,2)
-    Repo.insert_or_update_tpage(tid, page, posts.size,2)
-    Repo.update_thread_bot_date(tid,2)
+    inserted = Repo.insert_posts(posts, tid,SID)
+    Repo.insert_or_update_tpage(tid, page, posts.size,SID)
+    Repo.update_thread_bot_date(tid,SID)
 
     inserted
 
@@ -180,7 +180,7 @@ class RsnParser
 
       posts <<
       {
-        siteid:2,
+        siteid:SID,
         mid: mid,
         tid: smid,
         first: mid == smid ? 1 : 0,
@@ -203,17 +203,17 @@ class RsnParser
   end
 
   def self.show_forums
-    all = @@db[:forums].filter(siteid:2).all
+    all = DB[:forums].filter(siteid:SID).all
     all.each { |f| p "#{f[:name]} #{f[:fid]}"  }
   end
 
   def self.add_forum(fid,fname)
-    @@db[:forums].insert(fid: fid, name: fname, siteid:2,level:1, check: 1)
+    DB[:forums].insert(fid: fid, name: fname, siteid:SID,level:1, check: 1)
   end
 
   def self.edit_forum(fid, pfid)
 
-    @@db[:forums].where(siteid:2, fid:fid).update(parent_fid: pfid)
+    DB[:forums].where(siteid:SID, fid:fid).update(parent_fid: pfid)
   end
 end
 

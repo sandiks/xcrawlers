@@ -6,7 +6,7 @@ require_relative  '../repo'
 
 class ONLN_parser
 
-  @@db = Repo.get_db
+  DB = Repo.get_db
 
   def self.parse_categories
 
@@ -58,7 +58,7 @@ class ONLN_parser
 
       page = Repo.calc_page(tid,thr[:responses]+1,5)
 
-      thread_pages = @@db[:tpages].filter(siteid:5, tid:tid).map([:page,:postcount])
+      thread_pages = DB[:tpages].filter(siteid:5, tid:tid).map([:page,:postcount])
       p "tid:#{tid} resps:#{thr[:responses]}  page:#{page} thread:#{thread_pages}"
 
       if page>0

@@ -7,8 +7,8 @@ require_relative  '../repo'
 #Powered by SMF 1.1.19
 
 class BCTalkParser
-  @@db = Repo.get_db
-  @@sid = 9
+  DB = Repo.get_db
+  SID = 9
   @@need_save= true
 
 
@@ -36,9 +36,9 @@ class BCTalkParser
           fid = href.split('=').last.to_i
           fname = "forum_#{fid}"
 
-          subforums << {fid:fid, siteid:@@sid, title:ftitle, level:1,parent_fid: parent_fid, name:fname } if fid!=0
+          subforums << {fid:fid, siteid:SID, title:ftitle, level:1,parent_fid: parent_fid, name:fname } if fid!=0
 
-          Repo.insert_forums(subforums,@@sid) if @@need_save
+          Repo.insert_forums(subforums,SID) if @@need_save
         end
       end
 
@@ -51,9 +51,9 @@ class BCTalkParser
         parent_fid = fid
 
         #insert level0 forum
-        p forum0 = {fid:fid, siteid:@@sid, title:ftitle, level:0, parent_fid: 0, name:fname,  descr: descr }
+        p forum0 = {fid:fid, siteid:SID, title:ftitle, level:0, parent_fid: 0, name:fname,  descr: descr }
 
-        Repo.insert_or_update_forum(forum0,@@sid) if @@need_save
+        Repo.insert_or_update_forum(forum0,SID) if @@need_save
 
         #p "--------forum0 #{forum0[:descr]}"
         #subforums[0..4].each{|ff1| p ff1 }
@@ -62,7 +62,7 @@ class BCTalkParser
   end
 
   def self.check_forums(need_parse_threads=false)
-    forums = @@db[:forums].filter(siteid:@@sid, check:1).map(:fid)
+    forums = DB[:forums].filter(siteid:SID, check:1).map(:fid)
     forums.each do |fid|
       parse_forum(fid, need_parse_threads)
     end
@@ -101,12 +101,12 @@ class BCTalkParser
         title:thr_title,
         responses: tr.css("td")[4].text.to_i,
         updated: date,
-        siteid:@@sid,
+        siteid:SID,
       }
     end
 
     #page_threads.each_with_index { |tt, ind| p  "#{ind} #{tt[:title]} || #{tt[:updated]}"  }
-    Repo.insert_or_update_threads_for_forum(page_threads,@@sid) if @@need_save
+    Repo.insert_or_update_threads_for_forum(page_threads,SID) if @@need_save
   end
 
 end

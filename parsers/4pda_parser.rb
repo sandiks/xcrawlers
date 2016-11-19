@@ -7,8 +7,8 @@ require_relative  '../repo'
 #Форум IP.Board © 2016  IPS, Inc.
 
 class FpdaParser
-  @@db = Repo.get_db
-  @@sid = 10
+  DB = Repo.get_db
+  SID = 10
   @@need_save= true
   @@log =[]
 
@@ -47,9 +47,9 @@ class FpdaParser
           @@need_save = (fid ==1)
 
           #insert level0 forum
-          forum0 = {fid:fid, siteid:@@sid, title:ftitle, level:0, parent_fid:0, name:fname,  descr: descr }
+          forum0 = {fid:fid, siteid:SID, title:ftitle, level:0, parent_fid:0, name:fname,  descr: descr }
 
-          Repo.insert_or_update_forum(forum0,@@sid) if @@need_save
+          Repo.insert_or_update_forum(forum0,SID) if @@need_save
 
           subforums = []
           cat.css("td:nth-child(2) span.forumdesc > b >a").each do |ll|
@@ -58,10 +58,10 @@ class FpdaParser
             flink = ll['href']
             fid = fname = flink.split('=').last.to_i
 
-            subforums << {fid:fid, siteid:@@sid, title:ftitle, level:1,parent_fid:forum0[:fid], name:fname, descr: forum0[:title] } if fid!=0
+            subforums << {fid:fid, siteid:SID, title:ftitle, level:1,parent_fid:forum0[:fid], name:fname, descr: forum0[:title] } if fid!=0
           end
 
-          Repo.insert_forums(subforums,@@sid) if @@need_save
+          Repo.insert_forums(subforums,SID) if @@need_save
 
           puts ""
           puts "[level 0] fid:#{forum0[:fid]} descr:#{forum0[:descr]} title:#{forum0[:title]}"
@@ -73,7 +73,7 @@ class FpdaParser
   end
 
   def self.check_forums(need_parse_threads=false)
-    forums = @@db[:forums].filter(siteid:@@sid, check:1).map(:fid)
+    forums = DB[:forums].filter(siteid:SID, check:1).map(:fid)
 
     Parallel.map(forums,:in_threads=>3) do |fid|
       #forums.each do |fid|
@@ -115,16 +115,16 @@ class FpdaParser
           responses: tr.css("td:nth-child(4) > a").text.to_i,
           updated: updated,
           descr: descr,
-          siteid:@@sid,
+          siteid:SID,
         }
         #p "[#{indx}]-- #{tt}"
         page_threads<<tt
       end
     end
 
-    p page_threads.map{|tt| tt[:tid]}
-    Repo.insert_or_update_threads_for_forum(page_threads,@@sid,true) if @@need_save
-    @@db[:forums].where(siteid:@@sid, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
+    #p page_threads.map{|tt| tt[:tid]}
+    Repo.insert_or_update_threads_for_forum(page_threads,SID,true) if @@need_save
+    DB[:forums].where(siteid:SID, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
   end
 
   def self.parse_thread_last_date(date_str)
@@ -140,7 +140,7 @@ class FpdaParser
 
   def self.check_selected_threads()
 
-    threads = @@db[:threads].filter(siteid:@@sid, bot_tracked: 1).map(:tid)
+    threads = DB[:threads].filter(siteid:SID, bot_tracked: 1).map(:tid)
 
     Parallel.map(threads,:in_threads=>4) do |tid|
       #threads.each do |tid|
@@ -157,11 +157,11 @@ class FpdaParser
     link
   end
 
-  def self.load_thread(tid)
-    crw_thread =  @@db[:threads].filter(siteid:@@sid, tid:tid).first
+  def self.load_thread(tid, load_pages_back=1)
+    crw_thread =  DB[:threads].filter(siteid:SID, tid:tid).first
     title = crw_thread[:title] if crw_thread
 
-    pages = @@db[:tpages].filter(siteid:@@sid, tid:tid).to_hash(:page,:postcount)
+    pages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
     max_page = pages.max_by{|k,v| k}
     max_page = max_page.nil? ? 1: max_page.first
       
@@ -172,9 +172,11 @@ class FpdaParser
     last = (detect_last_page(max_page_html)/20+1)
     #p "***********last:#{last} max:#{max_page} link" if last>3000
 
-    last.downto(1).each_with_index do |pp,indx|
+    counter=1
+    last.downto(1).each do |pp|
       if pages[pp]!=20 #&& pp !=last
-        break if indx>0
+        break if counter> load_pages_back
+        counter+=1
 
         posts = 
         if pp==max_page 
@@ -192,7 +194,7 @@ class FpdaParser
   
   def self.update_thread_attributes(tid,last_post_date)
     #p "update last date #{last_post_date}"
-    rec = @@db[:threads].where(siteid:@@sid, tid:tid).update(updated: last_post_date)
+    rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: last_post_date)
   end 
   
   def self.parse_thread(tid, page=1)
@@ -225,7 +227,7 @@ class FpdaParser
         addeduid = addedby_url['href'].split('=').last.to_i
 
         posts<<{
-          siteid:@@sid,
+          siteid:SID,
           mid:mid.to_i,
           tid:tid,
           body: body,
@@ -239,12 +241,12 @@ class FpdaParser
     end
 
     #p users = posts.map { |pp| [pp[:addeduid], pp[:addedby]]  }
-    users = posts.map { |pp| {siteid:@@sid, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
+    users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
 
-    Repo.insert_users(users,@@sid)
-    Repo.insert_posts(posts, tid, @@sid)
-    Repo.insert_or_update_tpage(tid,page,posts.size,@@sid)
-    Repo.update_thread_bot_date(tid,@@sid)
+    Repo.insert_users(users,SID)
+    Repo.insert_posts(posts, tid, SID)
+    Repo.insert_or_update_tpage(tid,page,posts.size,SID)
+    Repo.update_thread_bot_date(tid,SID)
 
     p "tid:#{tid} page:#{page} inserted:#{posts.size}"
 

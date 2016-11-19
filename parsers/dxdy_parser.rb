@@ -6,8 +6,8 @@ require_relative  '../repo'
 
 
 class DXDYParser
-  @@db = Repo.get_db
-  @@sid = 7
+  DB = Repo.get_db
+  SID = 7
   @@need_save = true
   def self.list_forums
 
@@ -32,9 +32,9 @@ class DXDYParser
         fid = fname.split('-').last.sub("f","").to_i
 
         #insert level0 forum
-        forum0 = {fid:fid, siteid:@@sid, title:ftitle, level:0, parent_fid:0, name:fname,  descr: descr }
+        forum0 = {fid:fid, siteid:SID, title:ftitle, level:0, parent_fid:0, name:fname,  descr: descr }
 
-        Repo.insert_or_update_forum(forum0,@@sid) if @@need_save
+        Repo.insert_or_update_forum(forum0,SID) if @@need_save
 
         subforums = []
         cat.css("td:nth-child(2) p.forumdesc.forumicon a").each do |ll|
@@ -44,10 +44,10 @@ class DXDYParser
           fname = flink.split('/').last.sub(".html","")
           fid = fname.split('-').last.sub("f","").to_i
 
-          subforums << {fid:fid, siteid:@@sid, title:ftitle, level:1,parent_fid:forum0[:fid], name:fname } if fid!=0
+          subforums << {fid:fid, siteid:SID, title:ftitle, level:1,parent_fid:forum0[:fid], name:fname } if fid!=0
         end
 
-        Repo.insert_forums(subforums,@@sid) if @@need_save
+        Repo.insert_forums(subforums,SID) if @@need_save
 
         p "--------forum0 #{forum0[:descr]}"
         subforums[0..4].each{|ff1| p ff1 }
@@ -59,7 +59,7 @@ class DXDYParser
 
 
   def self.check_forums(need_parse_threads=false)
-    forums = @@db[:forums].filter(siteid:@@sid, check:1).map(:fid)
+    forums = DB[:forums].filter(siteid:SID, check:1).map(:fid)
 
     Parallel.each(forums,:in_threads=>3) do |fid|
     #forums.each do |fid|
@@ -70,7 +70,7 @@ class DXDYParser
 
   def self.get_forum_name(fid)
 
-    ff = @@db[:forums].where(siteid:@@sid, fid:fid).first
+    ff = DB[:forums].where(siteid:SID, fid:fid).first
     lev1 = ff[:name]
 
   end
@@ -105,20 +105,20 @@ class DXDYParser
         title:thr_title,
         responses: tr.css("td")[3].text.to_i,
         updated: date,
-        siteid:@@sid,
+        siteid:SID,
       }
     end
 
     #page_threads.each_with_index { |tt, ind| p  "#{ind} #{tt[:title]} || #{tt[:updated]}"  }
 
-    Repo.insert_or_update_threads_for_forum(page_threads,@@sid)
+    Repo.insert_or_update_threads_for_forum(page_threads,SID)
 
     Parallel.map(page_threads,:in_threads=>3) do |thr|
 
       tid = thr[:tid]
-      page = Repo.calc_page(tid,thr[:responses],@@sid)
+      page = Repo.calc_page(tid,thr[:responses],SID)
 
-      thread_pages = @@db[:tpages].filter(siteid:@@sid, tid:tid).map([:page,:postcount])
+      thread_pages = DB[:tpages].filter(siteid:SID, tid:tid).map([:page,:postcount])
       resps = thr[:responses]
 
       inserted =parse_thread(fname,tid, page) if page>0
