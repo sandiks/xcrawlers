@@ -121,7 +121,10 @@ class FpdaParser
         page_threads<<tt
       end
     end
+
+    p page_threads.map{|tt| tt[:tid]}
     Repo.insert_or_update_threads_for_forum(page_threads,@@sid,true) if @@need_save
+    @@db[:forums].where(siteid:@@sid, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
   end
 
   def self.parse_thread_last_date(date_str)
@@ -181,14 +184,13 @@ class FpdaParser
           p "---tid:#{tid} p:#{pp} loading... max:#{max_page} last:#{last}"
           parse_thread(tid, pp) 
         end
-        update_thread_attributes(tid,posts) if pp==last
+        update_thread_attributes(tid, posts.last[:addeddate]) if pp==last
       end
     end
 
   end
   
-  def self.update_thread_attributes(tid,posts)
-    last_post_date = posts.last[:addeddate]
+  def self.update_thread_attributes(tid,last_post_date)
     #p "update last date #{last_post_date}"
     rec = @@db[:threads].where(siteid:@@sid, tid:tid).update(updated: last_post_date)
   end 
@@ -252,7 +254,7 @@ class FpdaParser
   def self.detect_last_page(doc)
     nav = doc.css("div#ipbwrapper > table.ipbtable[cellspacing='0'] tr td:first")
     #href = nav.css("div > span.pagelinklast a")[0]['href']
-    href = nav.css("div > span.pagelinklast  a").select { |ll| ll[:href].include? "&stt="  }
+    href = nav.css("div > span.pagelinklast  a").select { |ll| ll[:href].include? "&st="  }
     start = (href.size>0 ? href[0][:href].split('=').last.to_i : 0)
   end
 
@@ -266,8 +268,8 @@ end
 
 #FpdaParser.check_forums
 
-#FpdaParser.parse_forum(336,1)
+#FpdaParser.parse_forum(642,1)
 #FpdaParser.parse_thread(717939,28280/20+1)
     #FpdaParser.load_thread(718322)
     #FpdaParser.check_selected_threads
-FpdaParser.test_detect_last_page_num(781085,88)
+#FpdaParser.test_detect_last_page_num(781085,88)

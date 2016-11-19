@@ -3,11 +3,11 @@ Sequel.datetime_class = DateTime
 
 class Repo
 
-  @@db = Sequel.connect('postgres://postgres:12345@localhost:5432/fbot')
-
+  #DB = Sequel.connect('postgres://postgres:12345@localhost:5432/fbot')
+  DB = Sequel.connect(:adapter => 'mysql2',:host => 'localhost',:database => 'fbot',:user => 'root')
 
   def self.get_db
-    @@db
+    DB
   end
 
   def self.datetime_now
@@ -15,7 +15,7 @@ class Repo
   end
 
   def self.get_forum_name(fid,sid=0)
-    ff = @@db[:forums].where(siteid:sid, fid: fid).first
+    ff = DB[:forums].where(siteid:sid, fid: fid).first
     lev1 = ff[:name]
   end
 
@@ -23,20 +23,20 @@ class Repo
   def self.get_forum_name_by_tid(tid,sid=0)
     return if sid==0
 
-    thr = @@db[:threads].where(siteid:sid, tid: tid).first
+    thr = DB[:threads].where(siteid:sid, tid: tid).first
     if not thr.nil?
-      ff = @@db[:forums].where(siteid:sid, fid: thr[:fid]).first
+      ff = DB[:forums].where(siteid:sid, fid: thr[:fid]).first
       ff[:name]
     end
   end
 
   def self.update_forum_bot_date(fid,sid=0)
-    rec = @@db[:forums].filter(siteid:sid, fid: fid)
+    rec = DB[:forums].filter(siteid:sid, fid: fid)
     rec.update(:bot_updated => datetime_now)
   end
 
   def self.get_forum_bot_date(fid,sid=0)
-    rec = @@db[:forums].filter(siteid:sid, fid: fid)
+    rec = DB[:forums].filter(siteid:sid, fid: fid)
     rec.first[:bot_updated] #.new_offset(3/24.0)
   end
 
@@ -44,14 +44,14 @@ class Repo
   def self.insert_forums(forums,sid=0)
 
     count=0
-    @@db.transaction do
+    DB.transaction do
 
-      exist = @@db[:forums].filter(siteid:sid).map(:fid)
+      exist = DB[:forums].filter(siteid:sid).map(:fid)
 
       forums.each do |ff|
         begin
           if not exist.include? ff[:fid]
-            @@db[:forums].insert(ff)
+            DB[:forums].insert(ff)
             count+=1
           end
         rescue =>ex
@@ -67,43 +67,43 @@ class Repo
 
   #####thread
   def self.get_thread_bot_date(tid,sid=0)
-    rec = @@db[:threads].filter(siteid:sid, tid: tid)
+    rec = DB[:threads].filter(siteid:sid, tid: tid)
     rec.first[:bot_updated].new_offset(3/24.0)
   end
 
   def self.get_thread(tid,sid=0)
     return if sid==0
-    thr = @@db[:threads].first(siteid:sid, tid: tid)
+    thr = DB[:threads].first(siteid:sid, tid: tid)
   end
 
   def self.insert_or_update_forum(forum,sid=0)
-    rec = @@db[:forums].where(siteid:sid, fid: forum[:fid])
+    rec = DB[:forums].where(siteid:sid, fid: forum[:fid])
 
     if 1 != rec.update(:name => forum[:name])
-      @@db[:forums].insert(forum)
+      DB[:forums].insert(forum)
     end
   end
 
   def self.update_thread_bot_date(tid,sid=0)
-    rec = @@db[:threads].filter(siteid:sid, tid: tid)
+    rec = DB[:threads].filter(siteid:sid, tid: tid)
     rec.update(:bot_updated => datetime_now)
   end
 
   def self.get_thread_bot_date(tid,sid=0)
-    rec = @@db[:threads].filter(siteid:sid, tid: tid)
+    rec = DB[:threads].filter(siteid:sid, tid: tid)
     rec.first[:bot_updated]
   end
 
   def self.insert_posts(posts,threads_id,sid=0)
     count=0
-    @@db.transaction do
+    DB.transaction do
 
-      exist = @@db[:posts].filter(siteid:sid, tid: threads_id).map(:mid)
+      exist = DB[:posts].filter(siteid:sid, tid: threads_id).map(:mid)
       posts.each do |pp|
         begin
 
           if not exist.include? pp[:mid]
-            @@db[:posts].insert(pp)
+            DB[:posts].insert(pp)
             count+=1
           end
         rescue =>ex
@@ -121,14 +121,14 @@ class Repo
   def self.insert_threads(threads,sid=0)
 
     count=0
-    @@db.transaction do
+    DB.transaction do
 
-      exist = @@db[:threads].filter(siteid:sid).map(:tid)
+      exist = DB[:threads].filter(siteid:sid).map(:tid)
 
       threads.each do |ff|
         begin
           if not exist.include? ff[:tid]
-            @@db[:threads].insert(ff)
+            DB[:threads].insert(ff)
             count+=1
           end
         rescue =>ex
@@ -142,12 +142,12 @@ class Repo
   def self.insert_or_update_threads_for_forum(threads,sid=0, full_update=false)
 
     count=0
-    @@db.transaction do
+    DB.transaction do
 
       threads.each do |tt|
         begin
 
-          rec = @@db[:threads].filter(siteid:sid, tid: tt[:tid])
+          rec = DB[:threads].filter(siteid:sid, tid: tt[:tid])
           upd_result = if full_update 
            rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], updated: tt[:updated])
           else 
@@ -155,7 +155,7 @@ class Repo
           end
 
           if upd_result != 1
-            @@db[:threads].insert(tt)
+            DB[:threads].insert(tt)
           end
 
         rescue =>ex
@@ -169,14 +169,14 @@ class Repo
   def self.insert_users(users,sid=0)
 
     count=0
-    @@db.transaction do
+    DB.transaction do
 
-      exist = @@db[:users].filter(siteid:sid).map(:name)
+      exist = DB[:users].filter(siteid:sid).map(:name)
 
       users.each do |us|
         begin
           if not exist.include? us[:name]
-            @@db[:users].insert(us)
+            DB[:users].insert(us)
             count+=1
           end
         rescue =>ex
@@ -195,7 +195,7 @@ class Repo
   end
 
   def self.get_tpages(tid,sid=0)
-    @@db[:tpages].filter(siteid:sid, tid:tid).to_hash(:page,:postcount)
+    DB[:tpages].filter(siteid:sid, tid:tid).to_hash(:page,:postcount)
   end
 
   def self.calc_page(tid,curr_responses,sid=0)
@@ -207,7 +207,7 @@ class Repo
     last_page = last_page_with_post_count[0]
     last_posts_count = last_page_with_post_count[1]
 
-    db_last_posts_count = @@db[:tpages].filter(siteid:sid, tid:tid, page:last_page).map(:postcount).first||0
+    db_last_posts_count = DB[:tpages].filter(siteid:sid, tid:tid, page:last_page).map(:postcount).first||0
 
     all_pages=(1..last_page-1).to_a
 
@@ -217,7 +217,7 @@ class Repo
     page =0
     if not new_posts
 
-      pages_count = @@db[:tpages].filter(siteid:sid, tid:tid).map([:page,:postcount])
+      pages_count = DB[:tpages].filter(siteid:sid, tid:tid).map([:page,:postcount])
 
       pages_less50 = pages_count.select{|p| p[1]!=page_size && p[0]<last_page}.map { |p| p[0] }
       pages50 = pages_count.select{|p| p[1]== page_size && p[0]<last_page}.map { |p| p[0] }
@@ -255,13 +255,13 @@ class Repo
     return if page==0 || sid==0
 
     #update table[tpages] with post count on page
-    rec = @@db[:tpages].where({siteid:sid, tid:tid, page:page })
+    rec = DB[:tpages].where({siteid:sid, tid:tid, page:page })
     
     #p "update tpage #{rec.sql}"
     upd =rec.update(postcount:count)
 
     if 1 != upd 
-      @@db[:tpages].insert({siteid:sid, tid:tid, page:page, postcount:count})
+      DB[:tpages].insert({siteid:sid, tid:tid, page:page, postcount:count})
     end
   end
 
