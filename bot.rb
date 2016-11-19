@@ -8,15 +8,16 @@ require_relative  'parsers/dxdy_parser'
 require_relative  'parsers/damagelab_parser'
 require_relative  'parsers/btc_parser'
 require_relative  'parsers/4pda_parser'
+require_relative  'repo'
 
-#@@db = Sequel.connect('postgres://postgres:12345@localhost:5432/fbot')
+DB = Repo.get_db
 
 def add_site(sid,sname)
-  @@db[:sites].insert(id: sid, name: sname)
+  DB[:sites].insert(id: sid, name: sname)
 end
 
 def self.add_forum(fid,fname)
-  @@db[:forums].insert(fid: fid, name: fname)
+  DB[:forums].insert(fid: fid, name: fname)
 end
 
 #add_site(3,"linux.org.ru")
@@ -26,7 +27,7 @@ site = ARGV[0]
 
 case site
 when 'all'
-  RsnParser.check_forums rescue "RsnParser:error"
+  RsnParser.check_forums 
   LORParser.check_forums rescue "LORParser:error"
   #SqlrParser.check_forums rescue "SqlrParser:error"
   #DXDYParser.check_forums rescue "DXDYParser:error"

@@ -8,8 +8,8 @@ require_relative  '../cmd_helper'
 
 
 class LORParser
-  @@db = Repo.get_db
-  @@sid=3
+  DB = Repo.get_db
+  SID=3
 
   def self.parse_categories
 
@@ -33,7 +33,7 @@ class LORParser
   end
 
   def self.check_forums(parse_threads=false)
-    all = @@db[:forums].filter(siteid:3,check:1).map(:fid)
+    all = DB[:forums].filter(siteid:3,check:1).map(:fid)
 
     Parallel.each(all,:in_threads=>2) do |fid|
     #all.each do |fid|
@@ -72,7 +72,7 @@ class LORParser
           title:tr.css("td:first a:first > text()").text.strip,
           updated: DateTime.parse(tr.css("td.dateinterval > time")[0]['datetime']),
           responses: tr.css("td:nth-child(3)").text.strip.to_i,
-          siteid:@@sid,
+          siteid:SID,
         }
       rescue =>ex
         p "[error] #{ex.class} title:#{title}"
@@ -93,7 +93,7 @@ class LORParser
 
       page = Repo.calc_page(tid,thr[:responses],3)
 
-      thread_pages = @@db[:tpages].filter(siteid:3, tid:tid).map([:page,:postcount])
+      thread_pages = DB[:tpages].filter(siteid:3, tid:tid).map([:page,:postcount])
       resps = thr[:responses]
 
       inserted =parse_thread(fname,tid, page) if page>0

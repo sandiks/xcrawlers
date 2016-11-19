@@ -8,9 +8,8 @@ require_relative  '../cmd_helper'
 
 class SqlrParser
 
-  @@db = Repo.get_db
-  @@sid = 6
-
+  DB = Repo.get_db
+  SID = 6
 
   def self.downl(link)
     download_page(link,true) #use tor
@@ -33,12 +32,12 @@ class SqlrParser
 
         fid = SqlrHelper.get_forum_id(fcode)
         if fid!=-1
-          forum = {fid:fid, siteid:@@sid, title:ftitle, level:1, name:fcode }
-          Repo.insert_or_update_forum(fid,@@sid)
+          forum = {fid:fid, siteid:SID, title:ftitle, level:1, name:fcode }
+          Repo.insert_or_update_forum(fid,SID)
 
         end
       end
-      #p forum0 = {fid:10*i,siteid:@@sid, title:forums[0], level:1, name:urls[0].split('/')[2] }
+      #p forum0 = {fid:10*i,siteid:SID, title:forums[0], level:1, name:urls[0].split('/')[2] }
       #Repo.insert_or_update_forum(forum0,3)
 
     end
@@ -46,18 +45,18 @@ class SqlrParser
 
   def self.check_forums(need_parse_threads=false)
 
-    forums = @@db[:forums].filter(siteid:@@sid,check: 1).all
+    forums = DB[:forums].filter(siteid:SID,check: 1).all
 
     Parallel.map(forums,:in_threads=>2) do |ff|
       #forums.each do |ff|
-      parse_forum(ff[:fid], need_parse_threads) if need_parse_forum(ff[:fid],@@sid)
+      parse_forum(ff[:fid], need_parse_threads) if need_parse_forum(ff[:fid],SID)
     end
   end
 
   def self.parse_forum(fid, need_parse_threads=false, last_index=12)
 
     #fid = SqlrHelper.get_forum_id(fname)
-    fname = Repo.get_forum_name(fid,@@sid)
+    fname = Repo.get_forum_name(fid,SID)
     p "[sql.ru] parse_forum fid:#{fname}"
     fpg = 1
 
@@ -83,14 +82,14 @@ class SqlrParser
         updated: parse_date(tr.css("td")[5].text),
         #updated: tr.css("td")[5].text,
         descr:url.split('/').last[0..99],
-        siteid:@@sid,
+        siteid:SID,
       }
       thread_urls << {tid:tid,url:url}
     end
 
     #page_threads.map { |tt| p tt[:updated] }
-    Repo.insert_or_update_threads_for_forum(page_threads,@@sid)
-    Repo.update_forum_bot_date(fid,@@sid)
+    Repo.insert_or_update_threads_for_forum(page_threads,SID)
+    Repo.update_forum_bot_date(fid,SID)
 
     #dowmload each thread
     page_threads.each_with_index{ |thr,ind| thr[:ind] = ind }
@@ -102,9 +101,9 @@ class SqlrParser
       next if ind<3 || ind>last_index
 
       resps=thr[:responses]
-      page = Repo.calc_page(tid,resps+1,@@sid)
+      page = Repo.calc_page(tid,resps+1,SID)
 
-      #thread_pages = @@db[:tpages].filter(siteid:@@sid, tid:tid).map([:page,:postcount])
+      #thread_pages = DB[:tpages].filter(siteid:SID, tid:tid).map([:page,:postcount])
 
       url_tid = thread_urls.find{|arr| arr[:tid]==tid}
       url = url_tid[:url] unless url_tid.nil?
@@ -133,11 +132,11 @@ class SqlrParser
 
     #p posts.map{|el| el[:addedby]}
 
-    inserted = Repo.insert_posts(posts, tid,@@sid)
-    Repo.insert_or_update_tpage(tid, page, posts.size,@@sid)
-    Repo.update_thread_bot_date(tid,@@sid)
+    inserted = Repo.insert_posts(posts, tid,SID)
+    Repo.insert_or_update_tpage(tid, page, posts.size,SID)
+    Repo.update_thread_bot_date(tid,SID)
 
-    #p @@db[:posts].where(siteid: 6, :tid => tid).select(:addeduid, :addedby).all
+    #p DB[:posts].where(siteid: 6, :tid => tid).select(:addeduid, :addedby).all
 
     inserted
   end
@@ -174,7 +173,7 @@ class SqlrParser
         #p post[:mid] #if date_str.empty?
 
         post[:addeddate] = parse_date(date_str)
-        post[:siteid] = @@sid
+        post[:siteid] = SID
 
         res<<post if mid!=0
 
@@ -195,25 +194,25 @@ class SqlrParser
   end
 
   def self.show_forums
-    all = @@db[:forums].filter(siteid:@@sid).all
+    all = DB[:forums].filter(siteid:SID).all
     all.each { |f| p "#{f[:name]} #{f[:fid]}"  }
   end
 
   def self.add_forum(fid,fname)
-    @@db[:forums].insert(fid: fid, name: fname, siteid:@@sid,level:1, check: 1)
+    DB[:forums].insert(fid: fid, name: fname, siteid:SID,level:1, check: 1)
   end
 
   def self.edit_forum(fid, pfid)
 
-    @@db[:forums].where(siteid:@@sid, fid:fid).update(parent_fid: pfid)
+    DB[:forums].where(siteid:SID, fid:fid).update(parent_fid: pfid)
   end
 
   def self.load_full_thread(tid,title,descr,resps=0)
     p "---loading full thread #{tid} title:#{title}"
 
-    pages = @@db[:tpages].filter(siteid:6, tid:tid).to_hash(:page,:postcount)
+    pages = DB[:tpages].filter(siteid:6, tid:tid).to_hash(:page,:postcount)
     pages.sort.select { |pp|  pp[1]==25  }
-    thread =  @@db[:threads].first(siteid:@@sid, tid:tid)
+    thread =  DB[:threads].first(siteid:SID, tid:tid)
 
     resps =  thread[:responses] rescue 0 if resps ==0
     descr =  thread[:descr] rescue "" if title.empty?
@@ -230,11 +229,11 @@ class SqlrParser
   end
 
   def self.check_if_thread_exist(fid,tid,title,descr,resps=0)
-    tt = Repo.get_thread(tid,@@sid)
+    tt = Repo.get_thread(tid,SID)
     return unless tt.nil?
 
-    resps = @@db[:posts].filter(siteid:@@sid,tid:tid).count if resps ==0
-    last = @@db[:posts].filter(siteid:@@sid,tid:tid).order(:addeddate).last[:addeddate]
+    resps = DB[:posts].filter(siteid:SID,tid:tid).count if resps ==0
+    last = DB[:posts].filter(siteid:SID,tid:tid).order(:addeddate).last[:addeddate]
     threads = []
 
     threads <<{
@@ -244,9 +243,9 @@ class SqlrParser
       responses: resps,
       updated: last,
       descr:descr,
-      siteid:@@sid,
+      siteid:SID,
     }
-    Repo.insert_or_update_threads_for_forum(threads,@@sid)
+    Repo.insert_or_update_threads_for_forum(threads,SID)
   end
 
 end

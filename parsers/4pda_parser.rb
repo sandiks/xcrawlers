@@ -122,7 +122,7 @@ class FpdaParser
       end
     end
 
-    p page_threads.map{|tt| tt[:tid]}
+    #p page_threads.map{|tt| tt[:tid]}
     Repo.insert_or_update_threads_for_forum(page_threads,@@sid,true) if @@need_save
     @@db[:forums].where(siteid:@@sid, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
   end
