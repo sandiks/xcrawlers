@@ -65,10 +65,9 @@ when 'shedule-pt'
     p "---finished sheduler #{dd}"
   end
   scheduler.join
-
+end
 
 p "--finished"
 #BCTalkParser.parse_forum(128)
 #SqlrParser.check_forums
 #SqlrParser.load_thread(1239274,5)
-

@@ -14,14 +14,12 @@ when 'selected'
 
 when 'df'
   if need_parse_forum(first,10)
-    p "download 4pda forum fid=#{first}"
     FpdaParser.parse_forum(first)
     p "finished 4pda :df fid:#{first}"
   end
 
 when 'dt'
   if true #need_parse_thread(first,10)
-    p "downl thread tid:#{first} pages_back:#{second}" #4pda.rb tid, pages_back
     second=1 if second==0
     FpdaParser.load_thread(first,second)
     p "finished lor :dt"
