@@ -72,18 +72,22 @@ class FpdaParser
     end
   end
 
-  def self.check_forums(need_parse_threads=false)
+  def self.downl(link)
+    download_page(link)
+  end
+
+  def self.check_forums(pages_back, need_parse_threads=false)
     forums = DB[:forums].filter(siteid:SID, check:1).map(:fid)
 
     Parallel.map(forums,:in_threads=>3) do |fid|
       #forums.each do |fid|
-      parse_forum(fid)
+      downl_forum(fid, pages_back)
     end
 
   end
 
-  def self.downl(link)
-    download_page(link)
+  def self.downl_forum(fid, pages_back)
+    1.upto(pages_back) {|pg| parse_forum(fid, pg) }
   end
 
   def self.parse_forum(fid, pg=1, need_parse_threads=false)
@@ -257,7 +261,7 @@ class FpdaParser
     end
 
     #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
-    #p users = posts.map { |pp| [ pp[:addeddate].to_s ] }
+    #data = posts.map { |pp| [ pp[:addeddate].to_s ] }
     users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
 
     Repo.insert_users(users,SID)
@@ -281,13 +285,13 @@ class FpdaParser
     p link = get_link(tid,page)
     max_page_html = Nokogiri::HTML(download_page(link))
     start_from = detect_last_page(max_page_html)
-    p last = start_from/20+1            
-            end
-            end
+    last = (start_from/20+1)
+  end
+end
 
-            #FpdaParser.check_forums
-            #FpdaParser.parse_forum(105,1)
-            #FpdaParser.parse_thread_page(745310,41)
-            #FpdaParser.load_thread(748160,2)
-            #FpdaParser.check_selected_threads
-            #FpdaParser.test_detect_last_page_num(781085,88)
+#FpdaParser.check_forums
+#FpdaParser.parse_forum(105,1)
+#FpdaParser.parse_thread_page(745310,41)
+#FpdaParser.load_thread(645616,1)
+#FpdaParser.check_selected_threads
+#FpdaParser.test_detect_last_page_num(781085,88)
