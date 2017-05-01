@@ -1,7 +1,5 @@
 require 'telegram_bot'
 
-#t.me/The4PDABot
-token = '360749711:AAF4PPtM12ab9w_egOoQ0dvDRFe6kghV6F4'
 
 p "start bot:::"
 bot = TelegramBot.new(token: token)

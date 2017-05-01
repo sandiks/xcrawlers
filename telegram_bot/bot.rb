@@ -1,11 +1,9 @@
 require 'telegram/bot'
 require_relative  '../repo'
 
-#t.me/ArenaGomel_bot
-#token = '224785510:AAEBHW8SCY83PbkzdUiRCa3jgMyWVjTFsak'
 
 #t.me/The4PDABot
-TOKEN = '360749711:AAF4PPtM12ab9w_egOoQ0dvDRFe6kghV6F4'
+TOKEN = '.secret'
 
 DB = Repo.get_db
 def run_bot
