@@ -76,7 +76,7 @@ class FpdaParser
     download_page(link)
   end
 
-  def self.check_forums(pages_back, need_parse_threads=false)
+  def self.check_forums(pages_back=1, need_parse_threads=false)
     forums = DB[:forums].filter(siteid:SID, check:1).map(:fid)
 
     Parallel.map(forums,:in_threads=>3) do |fid|
@@ -94,11 +94,12 @@ class FpdaParser
 
     p "download 4pda forum fid=#{fid} page:#{pg}"
 
-    pp = (pg==1 ? "" : "&st=#{(pg-1)*30}") if pg>1
+    pp = (pg>1 ? "&st=#{(pg-1)*30}" : "") 
 
-    link = "http://4pda.ru/forum/index.php?showforum=#{fid}#{pp}"
+    link = "https://4pda.ru/forum/index.php?showforum=#{fid}#{pp}"
 
     page_html = Nokogiri::HTML(downl(link))
+    #File.write("4pda-fid#{fid}-p#{pg}.html", page_html)
     #page_html = Nokogiri::HTML(File.open("f105.html"))
 
     threads = page_html.css("div.borderwrap table tr")
@@ -106,7 +107,7 @@ class FpdaParser
     page_threads =[]
 
     threads.each_with_index do |tr,indx|
-      next if tr.css("td").size != 7
+      next if tr.css("td").size < 7
 
       thr_a = tr.css("td:nth-child(3) > div:nth-child(2) > span > a")[0]
       if thr_a
@@ -132,7 +133,7 @@ class FpdaParser
       end
     end
 
-    #p page_threads.map{|tt| tt[:tid]}
+    #p page_threads.map{|tt| tt[:title]}
     Repo.insert_or_update_threads_for_forum(page_threads,SID,true) if @@need_save
     DB[:forums].where(siteid:SID, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
   end
@@ -143,14 +144,17 @@ class FpdaParser
       return nil
     end
     date_str = date_node.text.strip
+    now = DateTime.now.new_offset(3.0/24)
 
     #Сегодня, 00:22
     if date_str.include? "Сегодня"
-      date_str.gsub!("Сегодня",DateTime.now.strftime("%d.%m.%y"))
+      date_str.gsub!("Сегодня",now.strftime("%d.%m.%y"))
     elsif date_str.include? "Вчера"
-      date_str.gsub!("Вчера",(DateTime.now-1).strftime("%d.%m.%y"))
+      date_str.gsub!("Вчера",(now-1).strftime("%d.%m.%y"))
     end
     date = DateTime.strptime(date_str,"%d.%m.%y, %H:%M") rescue DateTime.new(1900,1,1) #.new_offset(3/24.0)
+    date>now ? date-1 : date
+
   end
 
 
@@ -181,14 +185,14 @@ class FpdaParser
 
     pages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
     max_page = pages.max_by{|k,v| k}
-    max_page = max_page.nil? ? 1: max_page.first
+    last_db_page = max_page.nil? ? 1: max_page.first
 
     #pages.sort.select { |pp|  pp[1]==20  }
 
-    link = get_link(tid,max_page)
+    link = get_link(tid,last_db_page)
     max_page_html = Nokogiri::HTML(downl(link))
     last = (detect_last_page(max_page_html)/20+1)
-    #p "***********last:#{last} max:#{max_page} link" if last>3000
+    p "***********last_db_page:#{last_db_page} last_site:#{last}"  #if last>3000
 
     counter=1
     last.downto(1).each do |pp|
@@ -197,11 +201,11 @@ class FpdaParser
         break if counter> load_pages_back
         counter+=1
 
-        if pp==max_page 
-           p "---tid:#{tid} p:#{pp} loading...(last == max_db) "
+        if pp==last_db_page 
+           p "---tid:#{tid} p:#{pp} loading...(last_db == last) "
           posts = parse_thread_from_html(tid, pp, max_page_html) 
         else 
-          p "---tid:#{tid} p:#{pp} loading... max:#{max_page} last:#{last}"
+          p "---tid:#{tid} p:#{pp} loading... "
           posts = parse_thread_page(tid, pp) 
         end
 
@@ -219,6 +223,7 @@ class FpdaParser
   def self.parse_thread_page(tid, page=1)
     link = get_link(tid,page)
     page_html = Nokogiri::HTML(download_page(link)) #if page_html.nil?
+    #File.write("4pda-tid#{tid}-p#{page}.html", page_html)
     parse_thread_from_html(tid, page, page_html)
 
   end
@@ -261,7 +266,8 @@ class FpdaParser
     end
 
     #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
-    #data = posts.map { |pp| [ pp[:addeddate].to_s ] }
+    #p posts.map { |pp| [ pp[:addeddate].to_s ] }
+    
     users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
 
     Repo.insert_users(users,SID)
@@ -290,8 +296,8 @@ class FpdaParser
 end
 
 #FpdaParser.check_forums
-#FpdaParser.parse_forum(105,1)
-#FpdaParser.parse_thread_page(745310,41)
-#FpdaParser.load_thread(645616,1)
+#FpdaParser.parse_forum(1,1)
+#FpdaParser.parse_thread_page(775882,156)
+#FpdaParser.load_thread(745310,3)
 #FpdaParser.check_selected_threads
-#FpdaParser.test_detect_last_page_num(781085,88)
+#p FpdaParser.test_detect_last_page_num(745310,1)

@@ -48,7 +48,7 @@ class LORParser
     fname = Repo.get_forum_name(fid,3)
     page_link = (pg==1 ? "" : "/?offset=#{(pg-1)*30}")
 
-    p link = "http://www.linux.org.ru/forum/#{fname}#{page_link}"
+    p link = "https://www.linux.org.ru/forum/#{fname}#{page_link}"
 
 
     page_noko = Nokogiri::HTML(download_page(link), nil, 'utf-8')
@@ -110,7 +110,7 @@ class LORParser
     fname = Repo.get_forum_name_by_tid(tid,3) if fname.nil?
     return if fname.nil? || page==0
 
-    link = "http://www.linux.org.ru/forum/#{fname}/#{tid}"
+    link = "https://www.linux.org.ru/forum/#{fname}/#{tid}"
     link += "/page#{page-1}" if page>1
 
     page_html = Nokogiri::HTML(download_page(link), nil, 'utf-8')
@@ -184,3 +184,4 @@ end
 
 
 #LORParser.parse_forum(20,2,false)
+#LORParser.check_forums

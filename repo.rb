@@ -106,7 +106,7 @@ class Repo
             DB[:posts].insert(pp)
             count+=1
           else
-            #DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(addeddate: pp[:addeddate])
+            DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(addeddate: pp[:addeddate])
           end
         rescue =>ex
           puts "[error mid:#{pp[:mid]}] #{ex.message} tid:#{threads_id}"
