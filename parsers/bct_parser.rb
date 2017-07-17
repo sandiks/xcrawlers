@@ -179,14 +179,14 @@ class BCTalkParser
     pages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
 
     incomplete_pages =[]
-    (1..1000).each { |pp| 
+    (1..1400).each { |pp|
       break if pages_num<1
-      if pages[pp]!=20 
-        incomplete_pages<<pp 
+      if pages[pp]!=20
+        incomplete_pages<<pp
         pages_num-=1
       end
     }
-p incomplete_pages
+    p incomplete_pages
     Parallel.map_with_index(incomplete_pages,:in_threads=>4) do |pp, idx|
       p "load_thread_par idx:#{idx} page:#{pp}"
       parse_thread_page(tid, pp)
@@ -300,16 +300,4 @@ p incomplete_pages
   end
 end
 
-act=7
 
-case act
-when 1; BCTalkParser.list_forums
-when 2; BCTalkParser.parse_forum(72,3)
-when 3; BCTalkParser.check_forums
-when 4; BCTalkParser.parse_thread_page(tid,21)
-when 5; BCTalkParser.test_detect_last_page_num(1923323,pg)
-when 6; BCTalkParser.load_thread(996518,5)
-when 7; BCTalkParser.load_thread_par_from_start(996518)
-else
-  p "run BCTalkParser parser"
-end
