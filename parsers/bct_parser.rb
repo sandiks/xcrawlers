@@ -9,6 +9,7 @@ require_relative  '../repo'
 class BCTalkParser
   DB = Repo.get_db
   SID = 9
+  THREAD_PAGE_SIZE =20
   @@need_save= true
   @@log =[]
 
@@ -109,7 +110,7 @@ class BCTalkParser
         siteid:SID,
       }
 
-      p "[parse_forum: finished] #{thr_title} ||#{date}"
+      #p "[parse_forum: finished] #{thr_title} ||#{date}"
     end
 
     #page_threads.each_with_index { |tt, ind| p  "#{ind} #{tt[:title]} || #{tt[:updated]}"  }
@@ -153,16 +154,16 @@ class BCTalkParser
     counter=1
     last.downto(1).each do |pp|
 
-      if pages[pp]!=20 #&& pp !=last
+      if pages[pp]!=THREAD_PAGE_SIZE #&& pp !=last
         break if counter> load_pages_back
         counter+=1
 
-        if pp==last_db_page 
-           p "---tid:#{tid} p:#{pp} loading...(last_db == last) "
-          posts = parse_thread_from_html(tid, pp, max_page_html) 
-        else 
+        if pp==last_db_page
+          p "---tid:#{tid} p:#{pp} loading...(last_db == last) "
+          posts = parse_thread_from_html(tid, pp, max_page_html)
+        else
           p "---tid:#{tid} p:#{pp} loading... "
-          posts = parse_thread_page(tid, pp) 
+          posts = parse_thread_page(tid, pp)
         end
 
         update_thread_attributes(tid, posts.last[:addeddate]) if pp==last
@@ -170,17 +171,38 @@ class BCTalkParser
     end
 
   end
-  
+  def self.load_thread_par_from_start(tid, pages_num=50)
+
+    crw_thread =  DB[:threads].filter(siteid:SID, tid:tid).first
+    title = crw_thread[:title] if crw_thread
+
+    pages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
+
+    incomplete_pages =[]
+    (1..1000).each { |pp| 
+      break if pages_num<1
+      if pages[pp]!=20 
+        incomplete_pages<<pp 
+        pages_num-=1
+      end
+    }
+p incomplete_pages
+    Parallel.map_with_index(incomplete_pages,:in_threads=>4) do |pp, idx|
+      p "load_thread_par idx:#{idx} page:#{pp}"
+      parse_thread_page(tid, pp)
+    end
+  end
+
   def self.update_thread_attributes(tid,last_post_date)
     #p "update last date #{last_post_date}"
     rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: last_post_date)
-  end 
-  
+  end
+
   def self.parse_thread_page(tid, page=1)
     link = get_link(tid,page)
     page_html = Nokogiri::HTML(download_page(link)) #if page_html.nil?
     #File.write("bctalk-tid#{tid}-p#{page}.html", page_html)
-    
+
     #page_html = Nokogiri::HTML(File.open("html/bctalk-tid2006833-p2.html"))
     parse_thread_from_html(tid, page, page_html)
 
@@ -189,79 +211,85 @@ class BCTalkParser
   def self.parse_thread_from_html(tid, page, page_html)
 
     post_class = page_html.css("div#bodyarea > form > table.bordercolor tr").first.attr('class')
+    top_mid = page_html.css("div#bodyarea > a")[1]
+    top_mid = top_mid['name']
+
     thread_posts = page_html.css("div#bodyarea > form > table.bordercolor tr[class^='#{post_class}']")
-    
+
     posts =[]
     idx =0
 
+    ##parse posts
     thread_posts.map do |post|
+
       mid = post.css('a').first.attr('name')
-      
-      if mid
+      ##set top mid
+      mid =top_mid unless mid
 
-        post_tr = post.css('table tr > td > table > tr').first #td[class~="windowbg windowbg2"]
+      post_tr = post.css('table tr > td > table > tr').first #td[class~="windowbg windowbg2"]
 
-        td1=post_tr.css('td')[0]
-        td2=post_tr.css('td')[1]
+      td1=post_tr.css('td')[0]
+      td2=post_tr.css('td')[1]
 
-        if idx==10 && false
-          File.write("html/post_tr.html", post_tr.to_s)
-          File.write("html/td1.html", td1.to_s)
-          File.write("html/td2.html", td2.to_s)
-        end
-        idx+=1
-        
-        if td1
-          link = td1.css('a')[0]
-          url = link["href"]
-          addedby = link.text.strip
-          addeduid = url.split('=').last.to_i
-        end
-        
-        #p post_date_str = td2.css('table tr td:nth-child(2) div.smalltext')
-        post_date_str = td2.css('td:nth-child(2) div.smalltext').text
-        post_date = DateTime.parse(post_date_str)
-
-
-        #body = td2.css('div.post').inner_html.force_encoding('ISO-8859-1').encode('UTF-8').strip
-        body = td2.css('div.post').inner_html.strip
-        mid = mid.sub('msg','').to_i
-        
-
-        posts<<{
-          siteid:SID,
-          mid:mid,
-          tid:tid,
-          body: body,
-          addeduid:addeduid,
-          addedby:addedby,
-          addeddate: post_date,
-          pnum:page
-        }
+      if idx==10 && false
+        File.write("html/post_tr.html", post_tr.to_s)
+        File.write("html/td1.html", td1.to_s)
+        File.write("html/td2.html", td2.to_s)
       end
+      idx+=1
+
+      if td1
+        link = td1.css('a')[0]
+        url = link["href"]
+        addedby = link.text.strip
+        addeduid = url.split('=').last.to_i
+      end
+
+      #p post_date_str = td2.css('table tr td:nth-child(2) div.smalltext')
+      post_date_str = td2.css('td:nth-child(2) div.smalltext').text
+      post_date = DateTime.parse(post_date_str)
+
+
+      #body = td2.css('div.post').inner_html.force_encoding('ISO-8859-1').encode('UTF-8').strip
+      body = td2.css('div.post').inner_html.strip
+      mid = mid.sub('msg','').to_i
+
+
+      posts<<{
+        siteid:SID,
+        mid:mid,
+        tid:tid,
+        body: body,
+        addeduid:addeduid,
+        addedby:addedby,
+        addeddate: post_date,
+        pnum:page
+      }
+
 
     end
 
     #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
     #p posts.map { |pp| [ pp[:addeddate].to_s ] }
-    
+
     users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
 
     if true
-        Repo.insert_users(users,SID)
-        Repo.insert_posts(posts, tid, SID)
-        Repo.insert_or_update_tpage(tid,page,(posts.size==21 ? 20 : posts.size),SID)
-        Repo.update_thread_bot_date(tid,SID)
+      Repo.insert_users(users,SID)
+      Repo.insert_posts(posts, tid, SID)
+      Repo.insert_or_update_tpage(tid,page,(posts.size==21 ? 20 : posts.size),SID)
+      Repo.update_thread_bot_date(tid,SID)
+    else
+      title = DB[:threads].where(siteid:SID, tid:tid).map(:title)
+      p "tid:#{tid} page:#{page} inserted:#{posts.size} title:#{title}"
     end
-    #p "tid:#{tid} page:#{page} inserted:#{posts.size}"
-
     posts
-  end  
+  end
 
   def self.detect_last_page(doc)
     nav = doc.css("div#bodyarea > table tr td:first a")
     max = nav.map { |ll| ll.text.to_i  }.max
-  end  
+  end
 
   def self.test_detect_last_page_num(tid,page=1)
     p link = get_link(tid,page)
@@ -272,15 +300,16 @@ class BCTalkParser
   end
 end
 
-act=0
-tid = 1628379
+act=7
 
 case act
 when 1; BCTalkParser.list_forums
 when 2; BCTalkParser.parse_forum(72,3)
 when 3; BCTalkParser.check_forums
-when 4; BCTalkParser.parse_thread_page(tid,1)
-when 5; BCTalkParser.test_detect_last_page_num(tid,2)
+when 4; BCTalkParser.parse_thread_page(tid,21)
+when 5; BCTalkParser.test_detect_last_page_num(1923323,pg)
+when 6; BCTalkParser.load_thread(996518,5)
+when 7; BCTalkParser.load_thread_par_from_start(996518)
 else
-  p "else "
+  p "run BCTalkParser parser"
 end
