@@ -81,13 +81,8 @@ class FpdaParser
 
     Parallel.map(forums,:in_threads=>3) do |fid|
       #forums.each do |fid|
-      downl_forum(fid, pages_back)
+      1.upto(pages_back) {|pg| parse_forum(fid, pg) }
     end
-
-  end
-
-  def self.downl_forum(fid, pages_back)
-    1.upto(pages_back) {|pg| parse_forum(fid, pg) }
   end
 
   def self.parse_forum(fid, pg=1, need_parse_threads=false)
@@ -230,9 +225,7 @@ class FpdaParser
 
   def self.parse_thread_from_html(tid, page, page_html)
 
-
     #page_html = Nokogiri::HTML(File.open("tid717939.html"))
-
     thread_posts = page_html.css("div.borderwrap > table.ipbtable")
 
     posts =[]

@@ -7,7 +7,7 @@ def get_mydb
 end
 
 
-def download_page(url, use_tor = false)
+def download_page(url, encoding="", use_tor = false)#win1251, utf-8, ISO-8859-1 
   headers = { 'User-Agent' => 'Windows / Firefox 32: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/32.0'}
   if use_tor
     #p "dowload through tor"
@@ -18,15 +18,18 @@ def download_page(url, use_tor = false)
       return html.body
     }
   else
+
     uri = URI.parse(url)
-    dwl_http = true
-    if dwl_http
-      #req = Net::HTTP::Get.new(uri.path,headers)
-      #response = Net::HTTP.start(uri.host,uri.port) { |http| http.request(req) }
+    #req = Net::HTTP::Get.new(uri.path,headers)
+    #response = Net::HTTP.start(uri.host,uri.port) { |http| http.request(req) }
+    #open(url,headers)
+    
+    if encoding == "win1251"
+      downl_win1251(url, headers)
+    elsif encoding == "ISO-8859-1"
       open(url,headers).read
     else
-       #open(url,headers)
-       downl_win1251(url, headers)
+      open(url,headers).read
     end
 
   end
