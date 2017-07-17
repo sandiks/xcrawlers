@@ -17,14 +17,14 @@ when 'df'
   if need_parse_forum(first,9)
     pages_back = second
     BCTalkParser.parse_forum(first,pages_back)
-    p "finished 4pda :df fid:#{first}"
+    p "finished bctalk :df fid:#{first}"
   end
 
 when 'dt'
   if true #need_parse_thread(first,9)
     second=1 if second==0
     BCTalkParser.load_thread(first,second)
-    p "finished lor :dt"
+    p "finished bctalk :dt"
   end
 
 end

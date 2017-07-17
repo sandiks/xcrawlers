@@ -130,7 +130,7 @@ class BCTalkParser
   end
 
   def self.get_link(tid, page=1)
-    pp = (page>1 ? "#{(page-1)*20}" : "0")
+    pp = (page>1 ? "#{(page-1)*THREAD_PAGE_SIZE}" : "0")
     link = "https://bitcointalk.org/index.php?topic=#{tid}.#{pp}"
   end
 
@@ -144,7 +144,7 @@ class BCTalkParser
     max_page = pages.max_by{|k,v| k}
     last_db_page = max_page.nil? ? 1: max_page.first
 
-    #pages.sort.select { |pp|  pp[1]==20  }
+    #pages.sort.select { |pp|  pp[1]==THREAD_PAGE_SIZE  }
 
     link = get_link(tid,last_db_page)
     max_page_html = Nokogiri::HTML(download_page(link))
@@ -181,7 +181,7 @@ class BCTalkParser
     incomplete_pages =[]
     (1..1400).each { |pp|
       break if pages_num<1
-      if pages[pp]!=20
+      if pages[pp]!=THREAD_PAGE_SIZE
         incomplete_pages<<pp
         pages_num-=1
       end
@@ -277,7 +277,7 @@ class BCTalkParser
     if true
       Repo.insert_users(users,SID)
       Repo.insert_posts(posts, tid, SID)
-      Repo.insert_or_update_tpage(tid,page,(posts.size==21 ? 20 : posts.size),SID)
+      Repo.insert_or_update_tpage(tid,page,(posts.size==21 ? THREAD_PAGE_SIZE : posts.size),SID)
       Repo.update_thread_bot_date(tid,SID)
     else
       title = DB[:threads].where(siteid:SID, tid:tid).map(:title)
