@@ -34,7 +34,7 @@ act=action.to_i
 case act
 when 2; BCTalkParser.parse_forum(159,2)
 when 3; BCTalkParser.check_forums
-when 4; BCTalkParser.parse_thread_page(tid,21)
+when 4; BCTalkParser.parse_thread_page(1897693,3)
 when 5; BCTalkParser.test_detect_last_page_num(1923323,pg)
 when 6; BCTalkParser.load_thread(996518,5)
 when 7; BCTalkParser.load_thread_par_from_start(996518)

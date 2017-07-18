@@ -1,4 +1,4 @@
-require_relative  'repo'
+require_relative  '../repo'
 require 'net/http'
 require 'cgi'
 
@@ -73,7 +73,7 @@ def test2
   tid=1211121
   mid=19095151
 
-  title ="Re: ЖУЧАГУ НА ГИЛЯКУ!!!"
+  title ="Re: sd!!!"
   text="не открывается"
 
   if mid>0

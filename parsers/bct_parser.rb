@@ -109,15 +109,24 @@ class BCTalkParser
         updated: date,
         siteid:SID,
       }
-
-      #p "[parse_forum: finished] #{thr_title} ||#{date}"
     end
 
     #page_threads.each_with_index { |tt, ind| p  "#{ind} #{tt[:title]} || #{tt[:updated]}"  }
     Repo.insert_or_update_threads_for_forum(page_threads,SID) if @@need_save
     DB[:forums].where(siteid:SID, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
+
+    parse_forum_threads(page_threads)
   end
 
+  def self.parse_forum_threads(page_threads)
+    Parallel.map(page_threads,:in_threads=>2) do |thr|
+      tid = thr[:tid]
+      responses = thr[:responses]
+      pages = Repo.calc_last_page(responses+1,20)
+      load_thread(tid) rescue "[bctalk, check_selected_threads] error tid:#{tid}"
+    end
+  end
+  
   #----thread parser
   def self.check_selected_threads()
 
@@ -144,12 +153,10 @@ class BCTalkParser
     max_page = pages.max_by{|k,v| k}
     last_db_page = max_page.nil? ? 1: max_page.first
 
-    #pages.sort.select { |pp|  pp[1]==THREAD_PAGE_SIZE  }
-
     link = get_link(tid,last_db_page)
     max_page_html = Nokogiri::HTML(download_page(link))
     last = (detect_last_page(max_page_html))
-    p "***********last_db_page:#{last_db_page} last_site:#{last}"  #if last>3000
+    #p "***********last_db_page:#{last_db_page} last_site:#{last}"  #if last>3000
 
     counter=1
     last.downto(1).each do |pp|
@@ -198,12 +205,20 @@ class BCTalkParser
     rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: last_post_date)
   end
 
-  def self.parse_thread_page(tid, page=1)
-    link = get_link(tid,page)
-    page_html = Nokogiri::HTML(download_page(link)) #if page_html.nil?
-    #File.write("bctalk-tid#{tid}-p#{page}.html", page_html)
+  @@test = false
 
-    #page_html = Nokogiri::HTML(File.open("html/bctalk-tid2006833-p2.html"))
+  def self.parse_thread_page(tid, page=1)
+
+    link = get_link(tid,page)
+    fname = "html/bctalk-tid#{tid}-p#{page}.html"
+
+    if File.exist?(fname) && @@test
+      page_html = Nokogiri::HTML(File.open(fname))
+    else
+      page_html = Nokogiri::HTML(download_page(link)) #if page_html.nil?
+      File.write(fname, page_html) if @@test
+    end
+
     parse_thread_from_html(tid, page, page_html)
 
   end
@@ -217,6 +232,7 @@ class BCTalkParser
     thread_posts = page_html.css("div#bodyarea > form > table.bordercolor tr[class^='#{post_class}']")
 
     posts =[]
+    rank={}
     idx =0
 
     ##parse posts
@@ -243,6 +259,8 @@ class BCTalkParser
         url = link["href"]
         addedby = link.text.strip
         addeduid = url.split('=').last.to_i
+
+        rank[addeduid] = detect_user_rank(td1)
       end
 
       #p post_date_str = td2.css('table tr td:nth-child(2) div.smalltext')
@@ -272,7 +290,7 @@ class BCTalkParser
     #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
     #p posts.map { |pp| [ pp[:addeddate].to_s ] }
 
-    users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid],name:pp[:addedby]}  }.uniq { |us| us[:uid] }
+    users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid], name:pp[:addedby], rank:rank[pp[:addeduid]]} }.uniq { |us| us[:uid] }
 
     if true
       Repo.insert_users(users,SID)
@@ -284,6 +302,14 @@ class BCTalkParser
       p "tid:#{tid} page:#{page} inserted:#{posts.size} title:#{title}"
     end
     posts
+  end
+
+  ##11-legendary
+  def self.detect_user_rank(td)
+    stars = td.css('div.smalltext > img[alt="*"]')
+    legend = stars.first['src'].end_with?("legendary.gif") rescue false
+    staff = stars.first['src'].end_with?("staff.gif") rescue false
+    rank = legend || staff ? 11 : stars.size
   end
 
   def self.detect_last_page(doc)
@@ -299,5 +325,3 @@ class BCTalkParser
     p last = detect_last_page(page_html)
   end
 end
-
-

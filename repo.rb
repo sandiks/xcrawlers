@@ -174,13 +174,15 @@ class Repo
     count=0
     DB.transaction do
 
-      exist = DB[:users].filter(siteid:sid).map(:name)
+      dbusers = DB[:users].filter(siteid:sid).map(:name)
 
       users.each do |us|
         begin
-          if not exist.include? us[:name]
+          if not dbusers.include? us[:name]
             DB[:users].insert(us)
             count+=1
+          else
+            DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
           end
         rescue =>ex
           puts "[error uid:#{us[:name]}] #{ex.class}"
@@ -192,8 +194,9 @@ class Repo
 
     count
   end
+
   def self.get_psize(sid=0)
-    posts_on_page_sites=[0,20,20,50,20,20,25,77,88,99,20]
+    posts_on_page_sites=[0,20,20,50,20,20,25,77,88,20,20]
     posts_on_page_sites[sid]
   end
 
