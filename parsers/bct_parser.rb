@@ -68,7 +68,7 @@ class BCTalkParser
 
     Parallel.map(forums,:in_threads=>3) do |fid|
       #forums.each do |fid|
-      parse_forum(fid, 1)
+      parse_forum(fid, 1, need_parse_threads)
       #1.upto(pages_back) {|pg| parse_forum(fid, pg) }
     end
 
@@ -112,18 +112,40 @@ class BCTalkParser
     end
 
     #page_threads.each_with_index { |tt, ind| p  "#{ind} #{tt[:title]} || #{tt[:updated]}"  }
+    old_thread_resps = DB[:threads].filter(siteid:SID, fid: fid).to_hash(:tid,:responses)
+
     Repo.insert_or_update_threads_for_forum(page_threads,SID) if @@need_save
     DB[:forums].where(siteid:SID, fid:fid).update(bot_updated: DateTime.now.new_offset(3/24.0))
 
-    parse_forum_threads(page_threads)
+    if need_parse_threads
+      load_forum_threads(fid, page_threads, old_thread_resps)
+    end
   end
 
-  def self.parse_forum_threads(page_threads)
+  def self.load_forum_threads(fid, page_threads, old_thread_resps)
+  	p "[load_forum_threads] fid:#{fid}"
+    
     Parallel.map(page_threads,:in_threads=>2) do |thr|
+    #page_threads.each do |thr|
       tid = thr[:tid]
       responses = thr[:responses]
-      pages = Repo.calc_last_page(responses+1,20)
-      load_thread(tid) rescue "[bctalk, check_selected_threads] error tid:#{tid}"
+      last_page_num = Repo.calc_last_page(responses+1,20)
+      lpage = last_page_num[0]
+      lcount = last_page_num[1]
+
+      old_resps = old_thread_resps[tid]
+      downl_pages=[]
+      
+      tpages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
+      downl_pages<<lpage if lcount != tpages[lpage]
+      downl_pages<<lpage-1 if tpages[lpage-1]!=20 && lpage-1>0
+      #downl_pages<<lpage-2 if tpages[lpage-2]!=20 && lpage-2>0
+
+      p "[parse_thread_page] tid:#{tid} pg:#{downl_pages.to_s.ljust(20)} old:#{old_resps} new:#{responses}"
+      downl_pages.each do |pp|   
+        parse_thread_page(tid, pp) rescue "[bctalk, load_forum_threads] error tid:#{tid}" 
+      end
+      
     end
   end
   
@@ -144,7 +166,7 @@ class BCTalkParser
   end
 
   def self.load_thread(tid, load_pages_back=1)
-    #p "downl thread tid:#{tid} pages_back:#{load_pages_back} use tor:false"
+    p "downl thread tid:#{tid} pages_back:#{load_pages_back} use tor:false"
 
     crw_thread =  DB[:threads].filter(siteid:SID, tid:tid).first
     title = crw_thread[:title] if crw_thread
@@ -155,7 +177,7 @@ class BCTalkParser
 
     link = get_link(tid,last_db_page)
     max_page_html = Nokogiri::HTML(download_page(link))
-    last = (detect_last_page(max_page_html))
+    last = (detect_last_page(max_page_html))||1
     #p "***********last_db_page:#{last_db_page} last_site:#{last}"  #if last>3000
 
     counter=1
@@ -211,16 +233,12 @@ class BCTalkParser
 
     link = get_link(tid,page)
     fname = "html/bctalk-tid#{tid}-p#{page}.html"
-
-    if File.exist?(fname) && @@test
-      page_html = Nokogiri::HTML(File.open(fname))
-    else
-      page_html = Nokogiri::HTML(download_page(link)) #if page_html.nil?
-      File.write(fname, page_html) if @@test
-    end
+    page_html = Nokogiri::HTML(download_page(link))
+    
+    #File.write(fname, page_html)
+    #page_html = Nokogiri::HTML(File.open(fname)) if File.exist?(fname)
 
     parse_thread_from_html(tid, page, page_html)
-
   end
 
   def self.parse_thread_from_html(tid, page, page_html)
@@ -283,8 +301,6 @@ class BCTalkParser
         addeddate: post_date,
         pnum:page
       }
-
-
     end
 
     #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
