@@ -174,18 +174,18 @@ class Repo
     count=0
     DB.transaction do
 
-      dbusers = DB[:users].filter(siteid:sid).map(:name)
+      dbusers = DB[:users].filter(siteid:sid).map(:uid)
 
       users.each do |us|
         begin
-          if not dbusers.include? us[:name]
+          if us[:uid] && !dbusers.include?(us[:uid])
             DB[:users].insert(us)
             count+=1
           else
-            DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
+            #DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
           end
         rescue =>ex
-          puts "[error uid:#{us[:name]}] #{ex.class}"
+          puts "[error uid:#{us[:uid]}] #{ex.class}"
         end
 
       end
