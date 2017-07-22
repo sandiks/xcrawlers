@@ -94,12 +94,8 @@ class BCTalkParser
       thr_link = thr_a['href']
       tid = thr_link.split('=').last.scan(/\d+/)[0].to_i
       date = tr.css("td:nth-child(7) span").text.strip
-      date = date[0..date.index('by')-1].strip
-      if date.include? "Today"
-        date.gsub!("Today at",DateTime.now.new_offset(0).strftime("%d.%m.%Y,"))
-      end
-      date = DateTime.parse(date) rescue ""
-      #p date = DateTime.strptime(date,"%D.%m.%y %H:%M").new_offset(3/24.0)
+      date_str = date[0..date.index('by')-1].strip
+      date = parse_post_date(date_str)
 
       page_threads << {
         fid:fid,
@@ -125,7 +121,7 @@ class BCTalkParser
   def self.load_forum_threads(fid, page_threads, old_thread_resps)
   	p "[load_forum_threads] fid:#{fid}"
     
-    Parallel.map(page_threads,:in_threads=>2) do |thr|
+    Parallel.map_with_index(page_threads,:in_threads=>3) do |thr,idx|
     #page_threads.each do |thr|
       tid = thr[:tid]
       responses = thr[:responses]
@@ -134,19 +130,27 @@ class BCTalkParser
       lcount = last_page_num[1]
 
       old_resps = old_thread_resps[tid]
-      downl_pages=[]
-      
-      tpages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
-      downl_pages<<lpage if lcount != tpages[lpage]
-      downl_pages<<lpage-1 if tpages[lpage-1]!=20 && lpage-1>0
-      #downl_pages<<lpage-2 if tpages[lpage-2]!=20 && lpage-2>0
+      downl_pages=calc_arr_downl_pages(tid,lpage,lcount).take(2)
 
-      p "[parse_thread_page] tid:#{tid} pg:#{downl_pages.to_s.ljust(20)} old:#{old_resps} new:#{responses}"
+      p "[#{idx} parse_thread_page] tid:#{tid} pg:#{downl_pages.to_s.ljust(20)} old:#{old_resps} new:#{responses}"
       downl_pages.each do |pp|   
         parse_thread_page(tid, pp) rescue "[bctalk, load_forum_threads] error tid:#{tid}" 
       end
       
     end
+  end
+
+  def self.calc_arr_downl_pages(tid,last_page,last_page_posts)
+    downl_pages=[]
+
+    tpages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
+    downl_pages<<last_page if last_page_posts != tpages[last_page]
+
+    (last_page-1).downto(1) do |pg|
+      downl_pages<<pg if tpages[pg]!=THREAD_PAGE_SIZE 
+    end
+
+    downl_pages
   end
   
   #----thread parser
@@ -283,7 +287,7 @@ class BCTalkParser
 
       #p post_date_str = td2.css('table tr td:nth-child(2) div.smalltext')
       post_date_str = td2.css('td:nth-child(2) div.smalltext').text
-      post_date = DateTime.parse(post_date_str)
+      post_date = parse_post_date(post_date_str)
 
 
       #body = td2.css('div.post').inner_html.force_encoding('ISO-8859-1').encode('UTF-8').strip
@@ -326,6 +330,14 @@ class BCTalkParser
     legend = stars.first['src'].end_with?("legendary.gif") rescue false
     staff = stars.first['src'].end_with?("staff.gif") rescue false
     rank = legend || staff ? 11 : stars.size
+  end
+
+  def self.parse_post_date(date_str)
+   
+    now = DateTime.now.new_offset(3.0/24)
+
+    date = DateTime.parse(date_str) rescue DateTime.new(1900,1,1) #.new_offset(3/24.0)
+    date>now ? date-1 : date
   end
 
   def self.detect_last_page(doc)

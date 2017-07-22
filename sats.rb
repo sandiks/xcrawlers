@@ -9,7 +9,7 @@ second = ARGV[2].to_i
 #ruby sats.rb pf 1 2
 
 case action
-when 'pf'; SatsParser.parse_forum(1,1) # fid, page
+when 'pf'; SatsParser.parse_forum(first,1) # fid, page
 when 'pt'; SatsParser.parse_thread_page(1,684530,1)
 when 'ltp'; SatsParser.load_thread_par_from_start(1,587330,50) # 443939 587330  down thread http://offtop.ru/satsang/v1_443939__.php
 

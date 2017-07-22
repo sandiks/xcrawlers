@@ -28,7 +28,7 @@ class SatsParser
   def self.parse_forum(fid, pg=1, need_parse_threads=false)
 
     pp = (pg>1 ? "_#{pg}_" : "")
-    p link = "http://offtop.ru/satsang/1#{pp}.php"
+    p link = "http://offtop.ru/satsang/#{fid}#{pp}.php"
 
     page = Nokogiri::HTML(download_page(link))
     #page = Nokogiri::HTML(File.open("btctalk128.html"))
@@ -95,17 +95,15 @@ class SatsParser
   end
 
   def self.calc_arr_downl_pages(tid,last_page,last_page_posts)
-    need_parse_last_two =true
     downl_pages=[]
 
-    if need_parse_last_two
-        tpages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
-        downl_pages<<last_page if last_page_posts != tpages[last_page]
+    tpages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
+    downl_pages<<last_page if last_page_posts != tpages[last_page]
 
-        (last_page-1).downto(1) do |pg|
-          downl_pages<<pg if tpages[pg]!=THREAD_PAGE_SIZE 
-        end
+    (last_page-1).downto(1) do |pg|
+      downl_pages<<pg if tpages[pg]!=THREAD_PAGE_SIZE 
     end
+
     downl_pages
   end
 
@@ -120,7 +118,7 @@ class SatsParser
     
     link = "http://offtop.ru/satsang/v#{fid}_#{tid}_#{page}_.php"
     title = DB[:threads].where(siteid:SID, tid:tid).map(:title).first
-    p "[thread] pg:#{page} title:#{title}"
+    p "[thread] tid:#{tid} pg:#{page} title:#{title}"
 
     if true #need_downl
       page_html = Nokogiri::HTML(download_page(link))    
