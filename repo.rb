@@ -152,9 +152,9 @@ class Repo
 
           rec = DB[:threads].filter(siteid:sid, tid: tt[:tid])
           upd_result = if full_update 
-           rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], updated: tt[:updated])
+           rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
           else 
-            rec.update(responses: tt[:responses], updated: tt[:updated])
+            rec.update(responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
           end
 
           if upd_result != 1

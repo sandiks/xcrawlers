@@ -102,6 +102,7 @@ class BCTalkParser
         tid:tid,
         title:thr_title,
         responses: tr.css("td")[4].text.to_i,
+        viewers: tr.css("td")[5].text.to_i,
         updated: date,
         siteid:SID,
       }
