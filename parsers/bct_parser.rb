@@ -346,11 +346,4 @@ class BCTalkParser
     max = nav.map { |ll| ll.text.to_i  }.max
   end
 
-  def self.test_detect_last_page_num(tid,page=1)
-    p link = get_link(tid,page)
-    page_html = Nokogiri::HTML(download_page(link))
-    #page_html = Nokogiri::HTML(File.open("html/bctalk-tid2006833-p2.html"))
-
-    p last = detect_last_page(page_html)
-  end
 end
