@@ -18,17 +18,16 @@ class BctReport
     threads = DB[:threads].filter(siteid:9).to_hash(:tid, :title)
 
     posts = DB[:posts].join(:threads, :tid=>:tid).join(:users, :uid=>:posts__addeduid)
-    .filter("posts.siteid=? and threads.fid=? and addeddate > ? and addeddate < ? and rank>3", 9, fid, from, from+1)
+    .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ? and addeddate < ? and rank>3", 9, fid, from, from+1))
     .order(:addeddate)
     .select(:addeduid, :addedby, :addeddate, :posts__tid).all
 
     ##generate
 
     out = []
-    out<<"title:#{title}"
-    out<<"[b]from: #{from.strftime("%F %H:%M")}[/b][b] to: #{to.strftime("%F %H:%M")}[/b]"
+    out<<"[b]forum:#{title} from: #{from.strftime("%F %H:%M")}  to: #{to.strftime("%F %H:%M")}[/b]"
     idx=0
-    posts.group_by{|h| h[:tid]}.sort_by{|k,v| -v.size}.take(50).each do |tid, posts| 
+    posts.group_by{|h| h[:tid]}.sort_by{|k,v| -v.inject(0) { |sum, p| sum+(uranks[p[:addedby]]||0) } }.take(25).each do |tid, posts| 
             out<<"[b]#{idx+=1} #{threads[tid]||tid}[/b]"        
              posts.group_by{|pp| pp[:addedby]}.each  do |uname,uposts|
               times = uposts.map { |po|  po[:addeddate].strftime("%k:%M")}.join(",")

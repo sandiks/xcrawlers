@@ -118,7 +118,7 @@ class BCTalkParser
 
     #tpages = DB[:tpages].filter(Sequel.lit("siteid=? and tid=? and fp_date > ?", SID, tid, fp_date)).to_hash(:page,:postcount)
     tpages = DB[:tpages].filter(Sequel.lit("siteid=? and tid=?", SID, tid)).to_hash(:page,:postcount)
-    downl_pages<<[last_page,tpages[last_page]] if last_page_posts-(tpages[last_page]||0)>2
+    downl_pages<<[last_page,tpages[last_page]] if last_page_posts-(tpages[last_page]||0)>1
 
     (last_page-1).downto(last_page-2) do |pg|
       break if pg<1
