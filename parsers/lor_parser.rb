@@ -150,7 +150,7 @@ class LORParser
     inserted_users=0 #Repo.insert_users(users)
 
     inserted = Repo.insert_posts(posts, tid,3)
-    Repo.insert_or_update_tpage(tid, page, posts.size,3)
+    Repo.insert_or_update_tpage(3,tid, page, posts.size)
     Repo.update_thread_bot_date(tid,3)
 
     inserted

@@ -257,17 +257,17 @@ class Repo
     [page,post_count]
   end
 
-  def self.insert_or_update_tpage(tid,page,count,sid=0)
+  def self.insert_or_update_tpage(sid=0,tid,page,count,first_post_date)
     return if page==0 || sid==0
 
     #update table[tpages] with post count on page
     rec = DB[:tpages].where({siteid:sid, tid:tid, page:page })
     
     #p "update tpage #{rec.sql}"
-    upd =rec.update(postcount:count)
+    upd =rec.update({postcount:count,fp_date: first_post_date})
 
     if 1 != upd 
-      DB[:tpages].insert({siteid:sid, tid:tid, page:page, postcount:count})
+      DB[:tpages].insert({siteid:sid, tid:tid, page:page, postcount:count, fp_date: first_post_date})
     end
   end
 

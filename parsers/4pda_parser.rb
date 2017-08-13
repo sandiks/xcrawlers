@@ -265,7 +265,7 @@ class FpdaParser
 
     Repo.insert_users(users,SID)
     Repo.insert_posts(posts, tid, SID)
-    Repo.insert_or_update_tpage(tid,page,(posts.size==21 ? 20 : posts.size),SID)
+    Repo.insert_or_update_tpage(SID,tid,page,(posts.size==21 ? 20 : posts.size))
     Repo.update_thread_bot_date(tid,SID)
 
     #p "tid:#{tid} page:#{page} inserted:#{posts.size}"

@@ -132,7 +132,7 @@ class GDParser
 
     Repo.insert_users(users,4)
     Repo.insert_posts(posts, tid, 4)
-    Repo.insert_or_update_tpage(tid,page,posts.size,4)
+    Repo.insert_or_update_tpage(4,tid,page,posts.size)
     Repo.update_thread_bot_date(tid,4)
 
     p "inserted posts:#{posts.size} tid:#{tid} fid:#{fname}"

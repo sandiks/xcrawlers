@@ -15,4 +15,6 @@ require_relative  '../repo'
   date_str = "Today at 08:16:00 PM"
   p DateTime.parse(date_str)
  # date_str = "July 21, 2017, 03:37:45 AM"
-  p parse_post_date(date_str)
+  #p parse_post_date(date_str)
+
+  1.upto(10) { |n| p n  }

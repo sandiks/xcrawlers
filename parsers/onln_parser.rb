@@ -128,7 +128,7 @@ class ONLN_parser
     end
     #Repo.insert_users(users,5)
     Repo.insert_posts(posts, tid, 5)
-    Repo.insert_or_update_tpage(tid,pp,posts.size,5)
+    Repo.insert_or_update_tpage(5,tid,pp,posts.size)
     Repo.update_thread_bot_date(tid,5)
 
     #p "inserted posts:#{posts.size}"

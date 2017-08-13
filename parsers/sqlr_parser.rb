@@ -138,7 +138,7 @@ class SqlrParser
     #p posts.map{|el| el[:addedby]}
 
     inserted = Repo.insert_posts(posts, tid,SID)
-    Repo.insert_or_update_tpage(tid, page, posts.size,SID)
+    Repo.insert_or_update_tpage(SID,tid, page, posts.size)
     Repo.update_thread_bot_date(tid,SID)
     #p DB[:posts].where(siteid: 6, :tid => tid).select(:addeduid, :addedby).all
     p "tid:#{tid} page:#{page} inserted:#{posts.size}"
