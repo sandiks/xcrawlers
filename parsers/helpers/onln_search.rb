@@ -1,7 +1,7 @@
 require 'nokogiri'
 require 'open-uri'
 require 'parallel'
-require_relative  '../repo'
+require_relative  '../../repo'
 
 
 class ONLN_search
