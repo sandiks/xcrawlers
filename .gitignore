@@ -1,9 +1,5 @@
-/doc/
-/libs/
-/.crystal/
-/.shards/
-/.vscode/
 
 *.yml
 *.bak
 .secret
+rep*.html
