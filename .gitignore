@@ -2,4 +2,4 @@
 *.yml
 *.bak
 .secret
-rep*.html
+report/*.html
