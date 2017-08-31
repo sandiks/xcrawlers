@@ -1,3 +1,4 @@
+require 'rufus-scheduler'
 require_relative  'parsers/sqlr_parser'
 require_relative  'cmd_helper'
 
@@ -46,4 +47,16 @@ when 'dt'
     SqlrParser.load_thread(first, second)
     p "finished thread tid:#{first} pg:#{second}"
   end
+
+when 'shedule-pt'
+  # ruby bot.rb shedule-pt 60
+  p "task:shedule-pt"
+  period = ARGV[1]
+  scheduler = Rufus::Scheduler.new
+  scheduler.every "#{period}s" do
+    SqlrParser.parse_forum(16,true,12)
+    dd = DateTime.now.new_offset(3/24.0).strftime("%F %k:%M:%S ")
+    p "---finished sheduler #{dd}"
+  end
+  scheduler.join  
 end

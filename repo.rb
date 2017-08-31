@@ -86,7 +86,7 @@ class Repo
 
   def self.update_thread_bot_date(tid,sid=0)
     rec = DB[:threads].filter(siteid:sid, tid: tid)
-    rec.update(:bot_updated => datetime_now)
+    rec.update(bot_updated: datetime_now)
   end
 
   def self.get_thread_bot_date(tid,sid=0)
@@ -106,8 +106,8 @@ class Repo
             DB[:posts].insert(pp)
             count+=1
           else
-            DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(addeddate: pp[:addeddate])
-            #DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(body:pp[:body], addeddate: pp[:addeddate])
+            #DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(addeddate: pp[:addeddate])
+            DB[:posts].filter(siteid:sid, mid: pp[:mid]).update(body:pp[:body])
           end
         rescue =>ex
           puts "[error mid:#{pp[:mid]}] #{ex.message} tid:#{threads_id}"
@@ -174,15 +174,18 @@ class Repo
     count=0
     DB.transaction do
 
-      dbusers = DB[:users].filter(siteid:sid).map(:uid)
+      dbusers = DB[:users].filter(siteid:sid).to_hash(:uid,:rank)
 
       users.each do |us|
         begin
-          if us[:uid] && !dbusers.include?(us[:uid])
+          if us[:uid] && !dbusers.key?(us[:uid])
             DB[:users].insert(us)
             count+=1
           else
-            #DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
+            if !dbusers[us[:uid]] || dbusers[us[:uid]]!=us[:rank]
+              #p "[update user rank #{us[:uid]}]  old:#{dbusers[us[:uid]]} new:#{us[:rank]}"
+              DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
+            end
           end
         rescue =>ex
           puts "[error uid:#{us[:uid]}] #{ex.class}"

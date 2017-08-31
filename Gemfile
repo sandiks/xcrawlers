@@ -1,6 +1,7 @@
 source 'https://rubygems.org'
 
-gem 'pg'
+#gem 'pg'
+gem 'mysql2'
 gem 'sequel'
 gem 'parallel'
 

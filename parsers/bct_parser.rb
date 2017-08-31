@@ -10,9 +10,12 @@ class BCTalkParser
   DB = Repo.get_db
   SID = 9
   THREAD_PAGE_SIZE =20
+  SAVE_BODY=false
+
   @@need_save= true
   @@log =[]
   @@from_date = DateTime.now.new_offset(0/24.0)-0.5
+  @@fid=0
 
 
   def self.check_forums(pages_back=1, need_parse_threads=false)
@@ -27,8 +30,10 @@ class BCTalkParser
   end
 
   def self.downl_forum_pages_for_last_day(fid, start_page=1) 
-
-    start_page.upto(start_page+10) do |pg|
+    p "from #{@@from_date.strftime("%F %H:%M:%S")} to #{DateTime.now.new_offset(0/24.0).strftime("%F %H:%M:%S")}"
+    @@fid=fid
+    
+    start_page.upto(start_page+20) do |pg|
       next if pg<1
       dd = parse_forum(fid,pg,true)
       break if dd<@@from_date rescue "[error] fdate <start_date"
@@ -38,6 +43,7 @@ class BCTalkParser
 
   def self.parse_forum(fid, pg=1, need_parse_threads=false)
 
+    @@fid=fid
     pp = (pg>1 ? "#{(pg-1)*40}" : "0")
     p link = "https://bitcointalk.org/index.php?board=#{fid}.#{pp}"
 
@@ -82,7 +88,7 @@ class BCTalkParser
   end
 
   def self.load_forum_threads(fid, page_threads, old_thread_resps)
-    
+  
     Parallel.map_with_index(page_threads,:in_threads=>3) do |thr,idx|
     #page_threads.each do |thr|
       tid = thr[:tid]
@@ -99,34 +105,69 @@ class BCTalkParser
       downl_pages=calc_arr_downl_pages(tid,lpage,lcount,@@from_date).take(3)
 
       res=[]
+      stars=0
       downl_pages.each do |pp|   
         res<<pp[0]
-        data = parse_thread_page(tid, pp[0]) rescue "[bctalk, load_forum_threads] error tid:#{tid}"
-        break if data[:first_post_date]<@@from_date rescue "[error] fdate <start_date"
+          begin
+            data = parse_thread_page(tid, pp[0]) 
+            stars += data[:stars]||0
+          rescue  =>ex 
+            puts "[error::load_forum_threads] tid:#{tid} page:#{pp[0]} #{ex.class} "
+            sleep 2 
+          end
+        #break if data[:first_post_date]<@@from_date rescue "[error] fdate <start_date"
       end      
-      planned_str=downl_pages.map { |pp| "#{pp[0]}*#{pp[1]}"   }.join(', ')
+      planned_str=downl_pages.map { |pp| "<#{pp[0]}*#{pp[1]} #{ pp[2] ? pp[2].strftime('%d*%H:%M:%S') : 'nil'}>" }.join(', ')
 
-      p "[#{idx} load_thr:#{tid} resp:#{responses} last:#{page_and_num}]".ljust(50)+"planned:#{planned_str.ljust(20)} downl:#{res.to_s.ljust(20)} updated:#{thr[:updated].strftime("%F %H:%M:%S") }"
+      p "[#{idx} load_thr #{tid} last:#{page_and_num}".ljust(40)+
+      "upd: #{thr[:updated].strftime("%d_%H:%M:%S") }]".ljust(20)+
+      "planned:#{planned_str.ljust(40)}  down:#{res} stars:#{stars}" if downl_pages.size>0
     end
 
     page_threads.last[:updated] #return last thread updated date
 
   end
 
-  def self.calc_arr_downl_pages(tid,last_page,last_page_posts,fp_date)
+  def self.get_diff
+     dd = {72=> 3, 159=>3, 90=>2}
+     dd[@@fid]||3
+  end
+
+  def self.calc_arr_downl_pages(tid,lp_num,lp_post_count,fp_date)
     downl_pages=[]
 
-    #tpages = DB[:tpages].filter(Sequel.lit("siteid=? and tid=? and fp_date > ?", SID, tid, fp_date)).to_hash(:page,:postcount)
-    tpages = DB[:tpages].filter(Sequel.lit("siteid=? and tid=?", SID, tid)).to_hash(:page,:postcount)
-    downl_pages<<[last_page,tpages[last_page]] if last_page_posts-(tpages[last_page]||0)>1
+    tpages = DB[:tpages].filter(Sequel.lit("siteid=? and tid=?", SID, tid)).to_hash(:page,[:postcount,:fp_date])
+    
+    #last thread page
+    need_downl_pages=true
+    mc0=0
+    if tpages[lp_num]
+      mc0=tpages[lp_num][0]
+      lp_date = tpages[lp_num][1]
+      need_downl_pages = lp_date && lp_date.to_datetime> @@from_date
+    end
+    downl_pages<<[lp_num,mc0,lp_date] if lp_post_count-mc0>=get_diff
 
-    (last_page-1).downto(last_page-2) do |pg|
-      break if pg<1
-      #downl_pages<<pg if tpages[pg]!=THREAD_PAGE_SIZE 
-      downl_pages<<[pg, tpages[pg]] if tpages[pg]!=THREAD_PAGE_SIZE 
+    #added pre-last pages
+    if need_downl_pages
+
+      (lp_num-1).downto(lp_num-3) do |pg|
+        break if pg<1
+        mc=0
+        lp_date=nil
+        if tpages[pg]
+          mc =  tpages[pg][0]
+          lp_date = tpages[pg][1]
+          is_earlier_date = lp_date && lp_date.to_datetime< @@from_date
+        end
+
+        downl_pages<<[pg, mc, lp_date] if mc!=THREAD_PAGE_SIZE 
+        break if is_earlier_date
+      end
     end
 
     downl_pages
+  
   end
   
   def self.get_link(tid, page=1)
@@ -171,13 +212,6 @@ class BCTalkParser
       td1=post_tr.css('td')[0]
       td2=post_tr.css('td')[1]
 
-      if idx==10 && false
-        File.write("html/post_tr.html", post_tr.to_s)
-        File.write("html/td1.html", td1.to_s)
-        File.write("html/td2.html", td2.to_s)
-      end
-      idx+=1
-
       if td1
         link = td1.css('a')[0]
         url = link["href"]
@@ -191,17 +225,18 @@ class BCTalkParser
       post_date_str = td2.css('td:nth-child(2) div.smalltext').text
       post_date = parse_post_date(post_date_str)
 
-
-      #body = td2.css('div.post').inner_html.force_encoding('ISO-8859-1').encode('UTF-8').strip
-      body = td2.css('div.post').inner_html.strip
+      body=nil
+      if rank[addeduid]>3
+        body = td2.css('div.post').inner_html.strip
+        body=remove_quote(body)
+      end
       mid = mid.sub('msg','').to_i
-
 
       posts<<{
         siteid:SID,
         mid:mid,
         tid:tid,
-        body: "", #body,
+        body: body,
         addeduid:addeduid,
         addedby:addedby,
         addeddate: post_date,
@@ -209,10 +244,11 @@ class BCTalkParser
       }
     end
 
-    #p "[info,parse_thread_from_html] tid:#{tid} p:#{page} size:#{posts.size}"
     #p posts.map { |pp| [ pp[:addeddate].to_s ] }
 
     users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid], name:pp[:addedby], rank:rank[pp[:addeduid]]} }.uniq { |us| us[:uid] }
+    more3stars = users.count{|x| x[:rank]>3}
+
     first_post_date = posts.first[:addeddate]
 
     if true #need save
@@ -224,11 +260,10 @@ class BCTalkParser
       title = DB[:threads].where(siteid:SID, tid:tid).map(:title)
       p "tid:#{tid} page:#{page} inserted:#{posts.size} title:#{title}"
     end
-
-    
     #p "[ parse_thread_page_html] tid:#{tid} pg:#{page} first:#{first_date.strftime("%F %H:%M")}"
 
-    {first_post_date: first_post_date} 
+    #{first_post_date: first_post_date} 
+    {stars: more3stars} 
   end
 
   ##11-legendary
@@ -241,15 +276,29 @@ class BCTalkParser
 
   def self.parse_post_date(date_str)
    
-    now = DateTime.now.new_offset(3.0/24)
+    now = DateTime.now.new_offset(0.0/24)
 
     date = DateTime.parse(date_str) rescue DateTime.new(1900,1,1) #.new_offset(3/24.0)
     date>now ? date-1 : date
   end
 
-  def self.detect_last_page(doc)
-    nav = doc.css("div#bodyarea > table tr td:first a")
-    max = nav.map { |ll| ll.text.to_i  }.max
+  def self.remove_quote(text)
+    ptext = Nokogiri::HTML.fragment(text)
+
+    ptext.css('div.quoteheader').each do |el|
+      if el.css("a").size>0
+        href=el.css("a")[0]['href'] 
+        th_m = href.split("topic=").last.scan(/\d+/)
+        nnode = "[q #{th_m[0]}.#{th_m[1]}]" 
+        el.add_next_sibling nnode
+      end
+    end 
+
+    ptext.css("div.quoteheader").remove
+    ptext.css("div.quote").remove
+
+    #node.remove
+    ptext.to_html
   end
 
 end

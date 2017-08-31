@@ -2,7 +2,7 @@ require 'nokogiri'
 require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
-require_relative  '../helpers/sqlr_helper'
+require_relative  'helpers/sqlr_helper'
 require_relative  '../repo'
 require_relative  '../cmd_helper'
 

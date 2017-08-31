@@ -1,3 +1,15 @@
+require 'nokogiri'
+require 'open-uri'
+require 'parallel'
+require_relative  '../../helpers/helper'
+require_relative  '../../repo'
+
+class BCTalkParserHelper
+  @@need_save= true
+  SID=9
+  DB = Repo.get_db
+
+
   def self.list_forums
 
     link ="https://bitcointalk.org/index.php"
@@ -22,7 +34,7 @@
           fid = href.split('=').last.to_i
           fname = "forum_#{fid}"
 
-          subforums << {fid:fid, siteid:SID, title:ftitle, level:1,parent_fid: parent_fid, name:fname } if fid!=0
+          puts subforums << {fid:fid, siteid:SID, title:ftitle, level:1,parent_fid: parent_fid, name:fname } if fid!=0
 
           Repo.insert_forums(subforums,SID) if @@need_save
         end
@@ -122,3 +134,11 @@
     #p "update last date #{last_post_date}"
     rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: last_post_date)
   end
+
+  def self.detect_last_page(doc)
+    nav = doc.css("div#bodyarea > table tr td:first a")
+    max = nav.map { |ll| ll.text.to_i  }.max
+  end  
+end
+
+BCTalkParserHelper.list_forums

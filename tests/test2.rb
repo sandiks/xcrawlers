@@ -17,4 +17,5 @@ require_relative  '../repo'
  # date_str = "July 21, 2017, 03:37:45 AM"
   #p parse_post_date(date_str)
 
-  1.upto(10) { |n| p n  }
+    dd = {72=> 3, 159=>3,90=>2}
+  p   dd[90
