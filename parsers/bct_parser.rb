@@ -2,7 +2,7 @@ require 'nokogiri'
 require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
-require_relative  '../repo'
+require_relative  '../helpers/repo'
 
 #Powered by SMF 1.1.19
 

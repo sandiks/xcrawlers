@@ -1,4 +1,4 @@
-require_relative  'parsers/lor_parser'
+require_relative  '../parsers/lor_parser'
 require_relative  'cmd_helper'
 
 action = ARGV[0]

@@ -1,6 +1,6 @@
-require_relative  'parsers/bct_parser'
+require_relative  '../parsers/bct_parser'
 require_relative  'cmd_helper'
-require_relative  'report/bct_report'
+require_relative  '../report/bct_report'
 
 action = ARGV[0]
 first = ARGV[1].to_i

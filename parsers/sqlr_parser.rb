@@ -2,9 +2,8 @@ require 'nokogiri'
 require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
-require_relative  'helpers/sqlr_helper'
-require_relative  '../repo'
-require_relative  '../cmd_helper'
+require_relative  '../helpers/sqlr_helper'
+require_relative  '../helpers/repo'
 
 class SqlrParser
 
@@ -117,7 +116,7 @@ class SqlrParser
         p "ind:#{ind} tid:#{tid} responses:#{resps} page:#{page} inserted:#{posts.size} title: #{thr[:descr]}"
       end
 
-    end if need_parse_threads
+    end
   end
 
   def self.get_link(tid, page=1, title="")

@@ -1,5 +1,5 @@
 
-require_relative  'repo'
+require_relative  '../helpers/repo'
 
 #site:2
 def get_current_time

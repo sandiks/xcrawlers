@@ -1,5 +1,5 @@
 require 'rufus-scheduler'
-require_relative  'parsers/sqlr_parser'
+require_relative  '../parsers/sqlr_parser'
 require_relative  'cmd_helper'
 
 #SqlrParser.parse_forum("linux")

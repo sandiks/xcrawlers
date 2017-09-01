@@ -1,5 +1,5 @@
-require_relative  'parsers/rsn_parser'
-require_relative  'repo'
+require_relative  '../parsers/rsn_parser'
+require_relative  '../helpers/repo'
 require_relative  'cmd_helper'
 
 #site:2

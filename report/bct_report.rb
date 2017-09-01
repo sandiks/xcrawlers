@@ -1,5 +1,5 @@
 require_relative  '../helpers/helper'
-require_relative  '../repo'
+require_relative  '../helpers/repo'
 
 Sequel.split_symbols = true
 

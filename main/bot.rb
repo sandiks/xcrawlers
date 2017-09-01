@@ -1,13 +1,13 @@
 require 'sequel'
-require_relative  'parsers/rsn_parser'
-require_relative  'parsers/lor_parser'
-require_relative  'parsers/sqlr_parser'
-require_relative  'parsers/gamedev_parser'
-require_relative  'parsers/dxdy_parser'
-require_relative  'parsers/damagelab_parser'
-require_relative  'parsers/btc_parser'
-require_relative  'parsers/4pda_parser'
-require_relative  'repo'
+require_relative  '../parsers/rsn_parser'
+require_relative  '../parsers/lor_parser'
+require_relative  '../parsers/sqlr_parser'
+require_relative  '../parsers/gamedev_parser'
+require_relative  '../parsers/dxdy_parser'
+require_relative  '../parsers/damagelab_parser'
+require_relative  '../parsers/btc_parser'
+require_relative  '../parsers/4pda_parser'
+require_relative  '../helpers/repo'
 
 DB = Repo.get_db
 
