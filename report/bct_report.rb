@@ -49,12 +49,13 @@ class BctReport
     end
 
     if true #active users
+      top = 25
 
       posts = DB[:posts].join(:threads, :tid=>:tid).join(:users, :uid=>:posts__addeduid)
       .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ?", SID, fid, from)).select(:addeduid, :addedby).all
 
-      out<<"*** top 15 active users *** from:#{from.strftime("%F %H:%M")}"
-      posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -pp.size}.take(15).each  do |uname,uposts|
+      out<<"*** top #{top} active users *** from:#{from.strftime("%F %H:%M")}"
+      posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -pp.size}.take(top).each  do |uname,uposts|
         out<<"[b]#{uname}[/b] (#{uranks[uname]}) posts:#{uposts.size}"
       end
     end  

@@ -108,13 +108,17 @@ class BCTalkParser
       stars=0
       downl_pages.each do |pp|   
         res<<pp[0]
+        loop do
           begin
             data = parse_thread_page(tid, pp[0]) 
             stars += data[:stars]||0
+            break
           rescue  =>ex 
-            puts "[error::load_forum_threads] tid:#{tid} page:#{pp[0]} #{ex.class} "
+            #puts "[error::load_forum_threads] tid:#{tid} page:#{pp[0]} #{ex.class} "
+            puts "!!!err_dwnl_thread [#{tid}.#{pp[0]}] #{ex.class} "
             sleep 2 
           end
+        end
         #break if data[:first_post_date]<@@from_date rescue "[error] fdate <start_date"
       end      
       planned_str=downl_pages.map { |pp| "<#{pp[0]}*#{pp[1]} #{ pp[2] ? pp[2].strftime('%d*%H:%M:%S') : 'nil'}>" }.join(', ')
