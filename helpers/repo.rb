@@ -128,17 +128,23 @@ class Repo
 
       exist = DB[:threads].filter(siteid:sid).map(:tid)
 
-      threads.each do |ff|
+      threads.each do |thr|
+        
         begin
-          if not exist.include? ff[:tid]
-            DB[:threads].insert(ff)
+          if not exist.include? thr[:tid]
+            DB[:threads].insert(thr)
             count+=1
+          else
+            #puts "update thread tid:#{thr[:tid]} title:#{thr[:title]}"
+            DB[:threads].filter(siteid:sid, tid: thr[:tid]).update(thr)
           end
         rescue =>ex
-          puts "[error tid:#{ff[:tid]}] #{ex.class}"
+          puts "[error tid:#{thr[:tid]}] #{ex.class}"
         end
+
       end
-    end
+
+    end #end trans
     count
   end
 
@@ -147,22 +153,28 @@ class Repo
     count=0
     DB.transaction do
 
-      threads.each do |tt|
+      exist = DB[:threads].filter(siteid:sid).map(:tid)
+          #rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
+          #rec.update(responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
+
+      threads.each do |thr|
         begin
 
-          rec = DB[:threads].filter(siteid:sid, tid: tt[:tid])
-          upd_result = if full_update 
-           rec.update(fid:tt[:fid], title:tt[:title], responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
-          else 
-            rec.update(responses: tt[:responses], viewers: tt[:viewers], updated: tt[:updated])
-          end
-
-          if upd_result != 1
-            DB[:threads].insert(tt)
+          if not exist.include? thr[:tid]
+            DB[:threads].insert(thr)
+            count+=1
+          else
+            #puts "update thread tid:#{thr[:tid]} title:#{thr[:title]}"
+            if full_update
+              DB[:threads].filter(siteid:sid, tid: thr[:tid]).update(thr)
+            else
+              DB[:threads].filter(siteid:sid, tid: thr[:tid])
+              .update(responses: thr[:responses], viewers: thr[:viewers], updated: thr[:updated])
+            end
           end
 
         rescue =>ex
-          puts "[error:insert_or_update_threads_for_forum tid:#{tt[:tid]}] #{ex.message}"
+          puts "[error:insert_or_update_threads_for_forum tid:#{thr[:tid]}] #{ex.message}"
         end
       end
     end

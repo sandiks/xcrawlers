@@ -115,7 +115,8 @@ class BCTalkParser
             break
           rescue  =>ex 
             #puts "[error::load_forum_threads] tid:#{tid} page:#{pp[0]} #{ex.class} "
-            puts "!!!err_dwnl_thread [#{tid}.#{pp[0]}] #{ex.class} "
+            puts "#{idx} !!!err_dwnl_thread [#{tid}.#{pp[0]}] #{ex.class} "
+            File.open('BCT_THREADS_ERRORS', 'a') { |f| f.write("#{tid} #{pp[0]}\n") }
             sleep 2 
           end
         end
