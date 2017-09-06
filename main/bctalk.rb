@@ -16,8 +16,11 @@ case action
 when 'check_forums';    BCTalkParser.check_forums(first) #pages_back
 when 'selected';        BCTalkParser.check_selected_threads
 when 'daily_parse';     BCTalkParser.downl_forum_pages_for_last_day(first,second)
-when 'pf';              BCTalkParser.parse_forum(first,second,true) #if true #need_parse_forum(first,9)
+when 'rep';             BctReport.gen_threads_with_stars_users(first,3) ##ruby bctalk.rb rep 159
+when 'bounty';          BctReport.print_groupped_by_bounty(first) 
+when 'topu';            BctReport.top_active_users_for_forum(first) ##ruby bctalk.rb topu 159
 when 'th_users';        BctReport.analyse_users_posts_for_thread(first) 
+when 'pf';              BCTalkParser.parse_forum(first,second,true) #if true #need_parse_forum(first,9)
 when 'clean_err';       File.write('BCT_THREADS_ERRORS', '') 
   
 when 'dt'
@@ -26,14 +29,10 @@ when 'dt'
     BCTalkParser.load_thread(first,second) #tid, pages_back
   end
 
-when 'rep';        BctReport.gen_threads_with_stars_users(first,3) ##ruby bctalk.rb rep 159
-when 'topu';       BctReport.top_active_users_for_forum(first) ##ruby bctalk.rb topu 159
-
 end
 
-act=0
 
-case act
+case 0
 
 when 4; BCTalkParser.parse_thread_page(2084827,339)
 when 5; BCTalkParser.test_detect_last_page_num(1923323,pg)

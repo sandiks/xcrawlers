@@ -37,7 +37,7 @@ class ONLN_parser
       upd_date = DateTime.strptime(change_rudate(updated_str),"%d.%m.%Y %H:%M")
 
       respns = tt.css('strong.total-msg').text.to_i
-      last = Repo.calc_last_page(respns+1,20)
+      last = PageUtil.calc_last_page(respns+1,20)
 
       threads<< {
         fid: fid,

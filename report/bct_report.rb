@@ -1,5 +1,6 @@
 require_relative  '../helpers/helper'
 require_relative  '../helpers/repo'
+require_relative  '../helpers/page_utils'
 
 Sequel.split_symbols = true
 
@@ -34,7 +35,7 @@ class BctReport
     posts.group_by{|h| h[:tid]}.sort_by{|k,pp| -pp.group_by{|pp| pp[:addedby]}.size }.take(30).each do |tid, posts| 
             thr_title = threads[tid]||tid
             resps = threads_responses[tid]||0
-            page_and_num = Repo.calc_last_page(resps+1,20)
+            page_and_num = PageUtil.calc_last_page(resps+1,20)
             lpage = (page_and_num[0]-1)*40 rescue 0
             
             url = "https://bitcointalk.org/index.php?topic=#{tid}.#{lpage}"
@@ -107,7 +108,63 @@ class BctReport
 
     puts res
 
-  end  
+  end
+
+  def self.print_users_bounty(fid)
+
+    title = DB[:forums].filter(siteid:SID,fid:fid).first[:title]
+    from=DateTime.now.new_offset(0/24.0)-0.6
+
+    unames = DB[:users].filter(siteid:SID).to_hash(:uid, [:name,:rank])
+    user_bounties = DB[:bct_user_bounty].to_hash(:uid, :bo_name)
+
+    posts = DB[:posts].join(:threads, :tid=>:tid)
+    .join(:users, :uid=>:posts__addeduid)
+    .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ? and rank>2", SID, fid, from))
+    .select(:addeduid, :addedby).all
+
+    res=[]
+    res<<"top 25 users boubty from: #{from.strftime("%F %H:%M")} forum:#{title}"
+    posts.group_by{|pp| pp[:addeduid]}.select{|uid,pp| user_bounties[uid]}
+    .sort_by{|uid,pp| -unames[uid][1]}.each do |uid,uposts|
+      res<<"[b]#{unames[uid][0]}[/b] (#{unames[uid][1]}) #{user_bounties[uid]}"
+    end  
+
+    fpath =File.dirname(__FILE__) + "/bounties#{fid}.html"
+    File.write(fpath, res.join("\n"))
+
+  end   
+  def self.print_groupped_by_bounty(fid)
+
+    title = DB[:forums].filter(siteid:SID,fid:fid).first[:title]
+    from=DateTime.now.new_offset(0/24.0)-0.6
+
+    unames = DB[:users].filter(siteid:SID).to_hash(:uid, [:name,:rank])
+    user_bounties = DB[:bct_user_bounty].to_hash(:uid, :bo_name)
+
+    posts = DB[:posts].join(:threads, :tid=>:tid)
+    .join(:users, :uid=>:posts__addeduid)
+    .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ? and rank>2", SID, fid, from))
+    .select(:addeduid).all
+
+    res=[]
+    res<<"groupped by bounty  ***forum:#{title}"
+    users = posts.group_by{|pp| pp[:addeduid]}.select{|uid,b_uu| user_bounties[uid]}.map { |k,v| k }
+    users.group_by{|uid| user_bounties[uid].gsub(' ', '')}.sort_by{|bname,uu| -uu.size}.each do |bname, uids|
+      break if uids.size<2
+
+      res<<" -------"
+      res<<" ---[b]#{bname}[/b] #{uids.size}"
+      res<< uids.each_slice(5).to_a.map do |sub_uids| 
+        sub_uids.map { |uid| "#{unames[uid][0]}(#{unames[uid][1]})"}.join(',')
+      end
+
+    end  
+
+    fpath =File.dirname(__FILE__) + "/bounties#{fid}.html"
+    File.write(fpath, res.join("\n"))
+
+  end        
 end
 
 #BctReport.gen_threads_with_stars_users(72)

@@ -1,4 +1,6 @@
 require 'sequel'
+require_relative  'page_utils'
+
 Sequel.datetime_class = DateTime
 
 class Repo
@@ -191,16 +193,16 @@ class Repo
       users.each do |us|
         begin
           if us[:uid] && !dbusers.key?(us[:uid])
-            DB[:users].insert(us)
+            DB[:users].insert( us.merge({created_at:DateTime.now.new_offset(3/24.0)}) )
             count+=1
           else
             if !dbusers[us[:uid]] || dbusers[us[:uid]]!=us[:rank]
               #p "[update user rank #{us[:uid]}]  old:#{dbusers[us[:uid]]} new:#{us[:rank]}"
-              DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
+              #DB[:users].filter(siteid:sid, uid: us[:uid]).update(rank: us[:rank])
             end
           end
         rescue =>ex
-          puts "[error uid:#{us[:uid]}] #{ex.class}"
+          puts "[error_insert_users] #{ex.message} #{us}"
         end
 
       end
@@ -210,10 +212,46 @@ class Repo
     count
   end
 
-  def self.get_psize(sid=0)
-    posts_on_page_sites=[0,20,20,50,20,20,25,77,88,20,20]
-    posts_on_page_sites[sid]
-  end
+  def self.save_bounty(bounties ,sid=9)
+
+    count=0
+    DB.transaction do
+      exist = DB[:bct_bounty].map(:name)
+      bounties.each do |bb|
+        begin
+          unless exist.include? bb[:name]
+            DB[:bct_bounty].insert(bb.merge({created_at:DateTime.now.new_offset(3/24.0)}))
+            count+=1
+          else
+            rec = DB[:bct_bounty].filter(name:bb[:name]).first
+            rec.update(descr: bb[:descr]) if bb[:descr].size>rec[:descr].size 
+          end        
+        rescue =>ex
+          puts "[error-save-bounty name:#{bb[:name]}] #{ex.class}"
+        end
+      end
+    end #end trans
+    count
+  end  
+
+  def self.save_user_bounty(user_bounties ,sid=9)
+
+    count=0
+    DB.transaction do
+      user_bounties.each do |bb|
+        begin
+          rec = DB[:bct_user_bounty].filter(uid:bb[:uid], bo_name: bb[:bo_name]).first
+          if !rec
+            DB[:bct_user_bounty].insert(bb.merge({created_at:DateTime.now.new_offset(3/24.0)}))
+            count+=1
+          end        
+        rescue =>ex
+          puts "[error-save-user-bounty bo_name:#{bb[:bo_name]}] #{ex.class}"
+        end
+      end
+    end #end trans
+    count
+  end  
 
   def self.get_tpages(tid,sid=0)
     DB[:tpages].filter(siteid:sid, tid:tid).to_hash(:page,:postcount)
@@ -221,9 +259,9 @@ class Repo
 
   def self.calc_page(tid,curr_responses,sid=0)
 
-    page_size = get_psize(sid)
+    page_size = PageUtil.get_psize(sid)
 
-    last_page_with_post_count = calc_last_page(curr_responses, page_size)
+    last_page_with_post_count = PageUtil.calc_last_page(curr_responses, page_size)
 
     last_page = last_page_with_post_count[0]
     last_posts_count = last_page_with_post_count[1]
@@ -258,18 +296,6 @@ class Repo
 
     page
 
-  end
-
-  def self.calc_last_page(responses, page_size=50)
-    return [1,1] if responses == 0
-
-    post_count = (responses)%page_size
-    post_count =page_size if post_count ==0
-
-    page = (responses)/page_size+1
-    page-=1 if post_count==page_size
-
-    [page,post_count]
   end
 
   def self.insert_or_update_tpage(sid=0,tid,page,count,first_post_date)

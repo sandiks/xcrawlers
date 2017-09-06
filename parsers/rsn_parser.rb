@@ -3,6 +3,7 @@ require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
 require_relative  '../helpers/rsn_helper'
+require_relative  '../helpers/page_utils'
 require_relative  '../repo'
 require_relative  '../cmd_helper'
 
@@ -107,7 +108,7 @@ class RsnParser
     thr = Repo.get_thread(tid,SID)
 
     resps=thr[:responses]+1
-    last_page, last_page_post_count = Repo.calc_last_page(resps,20)
+    last_page, last_page_post_count = PageUtil.calc_last_page(resps,20)
     tpages = Repo.get_tpages(tid,SID)
 
     urls=[]

@@ -3,6 +3,7 @@ require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
 require_relative  '../helpers/repo'
+require_relative  '../helpers/page_utils'
 
 #Powered by SMF 1.1.19
 
@@ -96,7 +97,7 @@ class BCTalkParser
       #next if tid!=2047476
 
       responses = thr[:responses]
-      page_and_num = Repo.calc_last_page(responses+1,20)
+      page_and_num = PageUtil.calc_last_page(responses+1,20)
       lpage = page_and_num[0]
       lcount = page_and_num[1]
 
@@ -109,6 +110,7 @@ class BCTalkParser
       downl_pages.each do |pp|   
         res<<pp[0]
         loop do
+
           begin
             data = parse_thread_page(tid, pp[0]) 
             stars += data[:stars]||0
@@ -202,7 +204,9 @@ class BCTalkParser
     thread_posts = page_html.css("div#bodyarea > form > table.bordercolor tr[class^='#{post_class}']")
 
     posts =[]
-    rank={}
+    users={}
+    bounties={}
+    user_bounty={}
     idx =0
 
     ##parse posts
@@ -211,31 +215,64 @@ class BCTalkParser
       mid = post.css('a').first.attr('name')
       ##set top mid
       mid =top_mid unless mid
+      mid = mid.sub('msg','').to_i
+
 
       post_tr = post.css('table tr > td > table > tr').first #td[class~="windowbg windowbg2"]
+      sign_tr = post.css('table  tr > td > table >  tr div.signature').first
 
       td1=post_tr.css('td')[0]
       td2=post_tr.css('td')[1]
 
+      #user info
+      rank=0
+      addeduid=0
       if td1
         link = td1.css('a')[0]
         url = link["href"]
         addedby = link.text.strip
         addeduid = url.split('=').last.to_i
+        rank = detect_user_rank(td1)
 
-        rank[addeduid] = detect_user_rank(td1)
+        unless users.has_key?(addeduid)
+          users[addeduid]={siteid:SID, uid: addeduid, name:addedby, rank:rank}
+        end
       end
 
-      #p post_date_str = td2.css('table tr td:nth-child(2) div.smalltext')
+      #parse signature
+      if sign_tr
+        
+        links = sign_tr.css('a')
+        grouped_domains = links.group_by do |ll|
+          link = ll['href'].gsub(' ','').strip
+          begin
+            URI.parse( link ).host.split('.').last(2).join('.') 
+          rescue
+            link.sub(/^https?\:\/\/(www.)?/,'').split('/').first.strip
+          end
+        end
+
+        domains = grouped_domains
+        .sort_by{|k,v| k.include?("bitcointalk.org") ? 0 : -v.size}
+        .map { |k,v| v.size>1 ? k : v.map{ |ll| ll['href'].sub(/^https?\:\/\/(www.)?/,'') }.join('|') }
+        
+        kk = domains.first
+        
+        if kk && !kk.strip.empty? 
+          bounties[kk] = { name:kk, descr: domains.join('|')} if !bounties.has_key?(kk) 
+          user_bounty[addeduid] = {uid:addeduid, bo_name:kk} if !user_bounty.has_key?(addeduid)
+        end
+      end
+
+
       post_date_str = td2.css('td:nth-child(2) div.smalltext').text
       post_date = parse_post_date(post_date_str)
 
       body=nil
-      if rank[addeduid]>3
+      if rank>3
         body = td2.css('div.post').inner_html.strip
         body=remove_quote(body)
       end
-      mid = mid.sub('msg','').to_i
 
       posts<<{
         siteid:SID,
@@ -250,14 +287,15 @@ class BCTalkParser
     end
 
     #p posts.map { |pp| [ pp[:addeddate].to_s ] }
-
-    users = posts.map { |pp| {siteid:SID, uid:pp[:addeduid], name:pp[:addedby], rank:rank[pp[:addeduid]]} }.uniq { |us| us[:uid] }
-    more3stars = users.count{|x| x[:rank]>3}
+    users_arr = users.values
+    more3stars = users_arr.count{|x| x[:rank]>3} rescue 0
 
     first_post_date = posts.first[:addeddate]
 
     if true #need save
-      Repo.insert_users(users,SID)
+      Repo.insert_users(users_arr, SID)
+      Repo.save_bounty(bounties.values, SID)
+      Repo.save_user_bounty(user_bounty.values, SID)
       Repo.insert_posts(posts, tid, SID)
       Repo.insert_or_update_tpage(SID,tid,page,posts.size,first_post_date)
       Repo.update_thread_bot_date(tid,SID)

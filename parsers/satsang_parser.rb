@@ -2,6 +2,7 @@ require 'nokogiri'
 require 'open-uri'
 require 'parallel'
 require_relative  '../helpers/helper'
+require_relative  '../helpers/page_utils'
 require_relative  '../repo'
 
 #Powered by SMF 1.1.19
@@ -78,7 +79,7 @@ class SatsParser
       tid = thr[:tid]
       responses = thr[:responses]
 
-      last_page_num = Repo.calc_last_page(responses+1, THREAD_PAGE_SIZE)
+      last_page_num = PageUtil.calc_last_page(responses+1, THREAD_PAGE_SIZE)
       lpage = last_page_num[0]
       lcount = last_page_num[1]
 
