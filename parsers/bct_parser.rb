@@ -257,6 +257,7 @@ class BCTalkParser
         .map { |k,v| v.size>1 ? k : v.map{ |ll| ll['href'].sub(/^https?\:\/\/(www.)?/,'') }.join('|') }
         
         kk = domains.first
+        #p "bounty:  #{kk}".ljust(60)+"#{addedby}"
         
         if kk && !kk.strip.empty? 
           bounties[kk] = { name:kk, descr: domains.join('|')} if !bounties.has_key?(kk) 

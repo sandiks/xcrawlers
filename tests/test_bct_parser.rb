@@ -53,11 +53,11 @@ def save_thread_title
 end
 
 #File.open('BCT_THREADS_ERRORS', 'a') { |f| f.write("1 1\n") }
-case 0
+case 4
 
   when 1; save_thread_title()
   when 2;#BCTalkParser.parse_forum(159,1,true)
   when 3; p test_calc_arr_downl_pages(2014218)
-  when 4; BCTalkParser.parse_thread_page(2078443,1)
+  when 4; BCTalkParser.parse_thread_page(1438371,39)
 
 end

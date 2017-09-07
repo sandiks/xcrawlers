@@ -9,7 +9,8 @@ class BctReport
   SID = 9
   THREAD_PAGE_SIZE =20
 
-  def self.gen_threads_with_stars_users(fid,rank=4)
+  def self.gen_threads_with_stars_users(fid, type='f')
+    rank =3
     
     from=DateTime.now.new_offset(0/24.0)-0.5
     to=DateTime.now.new_offset(0/24.0)
@@ -25,9 +26,12 @@ class BctReport
     .select(:addeduid, :addedby, :addeddate, :posts__tid).all
 
     ##generate
+    bold = type =='f' ? "[b]" : "**"
+    bold_end = type =='f' ? "[/b]" : "**"
+
 
     out = []
-    out<<"[b]forum:#{title} from: #{from.strftime("%F %H:%M")}  to: #{to.strftime("%F %H:%M")}[/b]"
+    out<<"#{bold}forum:#{title} from: #{from.strftime("%F %H:%M")}  to: #{to.strftime("%F %H:%M")}#{bold_end}"
     out<<"------------"
     
     idx=0
@@ -39,11 +43,11 @@ class BctReport
             lpage = (page_and_num[0]-1)*40 rescue 0
             
             url = "https://bitcointalk.org/index.php?topic=#{tid}.#{lpage}"
-            out<<"[b]#{idx+=1} #{thr_title}[/b] #{url}"        
+            out<<"#{bold}#{idx+=1} #{thr_title}#{bold_end} #{url}"        
              posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -uranks[uname]}.each  do |uname,uposts|
               #times = uposts.map { |po|  po[:addeddate].strftime("%k:%M")}.join(",")
               posts_count = uposts.size
-              out<<"[b]#{uname}[/b] [#{print_rank(uranks[uname])}] [#{posts_count} posts]"
+              out<<"#{bold}#{uname}#{bold_end} [#{print_rank(uranks[uname])}] [#{posts_count} posts]"
              end 
             out<<"------------"
         
@@ -55,9 +59,9 @@ class BctReport
       posts = DB[:posts].join(:threads, :tid=>:tid).join(:users, :uid=>:posts__addeduid)
       .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ?", SID, fid, from)).select(:addeduid, :addedby).all
 
-      out<<"*** top #{top} active users *** from:#{from.strftime("%F %H:%M")}"
+      out<<"**top #{top} active users** from:#{from.strftime("%F %H:%M")}"
       posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -pp.size}.take(top).each  do |uname,uposts|
-        out<<"[b]#{uname}[/b] (#{uranks[uname]}) posts:#{uposts.size}"
+        out<<"#{bold}#{uname}#{bold_end} (#{uranks[uname]}) posts:#{uposts.size}"
       end
     end  
 
