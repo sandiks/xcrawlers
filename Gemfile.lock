@@ -12,6 +12,7 @@ GEM
       thread_safe (~> 0.3, >= 0.3.1)
     domain_name (0.5.20170404)
       unf (>= 0.0.5, < 1.0.0)
+    dotenv (2.2.1)
     equalizer (0.0.11)
     et-orbi (1.0.5)
       tzinfo
@@ -66,6 +67,7 @@ PLATFORMS
 
 DEPENDENCIES
   cinch
+  dotenv
   mechanize
   mysql2
   nokogiri
@@ -76,4 +78,4 @@ DEPENDENCIES
   telegram-bot-ruby
 
 BUNDLED WITH
-   1.13.6
+   1.14.6

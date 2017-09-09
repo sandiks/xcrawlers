@@ -1,5 +1,5 @@
 require 'cinch'
-require_relative  'repo'
+require_relative  '../../helpers/repo'
 require_relative  'irc_text'
 
 

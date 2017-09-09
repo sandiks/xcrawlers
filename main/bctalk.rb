@@ -1,30 +1,32 @@
 require_relative  '../parsers/bct_parser'
 require_relative  'cmd_helper'
-require_relative  '../report/bct_report'
+require_relative  'bct_report'
 
 action = ARGV[0]
 first = ARGV[1].to_i
 second = ARGV[2].to_i
+third = ARGV[3].to_i
 
-##67 altcoin discussion
-##72 форки  # ruby bctalk.rb pf 72 1
-##159  Announcements (Altcoins)
-## 238 bounty (Altcoins)
+##    67 altcoin discussion
+##    72 форки  
+##    159  Announcements (Altcoins)
+##    238 bounty (Altcoins)
 
 case action
 
 when 'check_forums';    BCTalkParser.check_forums(first) #pages_back
 when 'selected';        BCTalkParser.check_selected_threads
-when 'daily_parse';     BCTalkParser.downl_forum_pages_for_last_day(first,second)
-when 'repf';            BctReport.gen_threads_with_stars_users(first,'f') ##ruby bctalk.rb rep 159 f|t
-when 'rept';            BctReport.gen_threads_with_stars_users(first,'t') ##ruby bctalk.rb rep 159 f|t
+when 'parse_time';      BCTalkParser.downl_forum_pages_for_last_day(first,1,second)
+when 'repf';            BctReport.gen_threads_with_stars_users(first,'f', second) ##ruby bctalk.rb rep 159 f|t
+when 'rept';            BctReport.gen_threads_with_stars_users(first,'t', second) ##ruby bctalk.rb rep 159 f|t
 when 'bounty';          BctReport.print_groupped_by_bounty(first) 
 when 'topu';            BctReport.top_active_users_for_forum(first) ##ruby bctalk.rb topu 159
 when 'thread_users';    BctReport.analyse_users_posts_for_thread(first) 
 when 'pf';              BCTalkParser.parse_forum(first,second,true) #if true #need_parse_forum(first,9)
 when 'clean_err';       File.write('BCT_THREADS_ERRORS', '') 
+when 'h';               p "1 bitcoin discussion 67 altcoins discussion, 159 Announcements (Altcoins) 72 форки 238 bounty (Altcoins)" 
   
-when 'dt'
+when 'parse_thr'
   if true #need_parse_thread(first,9)
     second=1 if second==0
     BCTalkParser.load_thread(first,second) #tid, pages_back

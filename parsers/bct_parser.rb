@@ -4,6 +4,7 @@ require 'parallel'
 require_relative  '../helpers/helper'
 require_relative  '../helpers/repo'
 require_relative  '../helpers/page_utils'
+require_relative  'helpers/bct_helper'
 
 #Powered by SMF 1.1.19
 
@@ -15,8 +16,10 @@ class BCTalkParser
 
   @@need_save= true
   @@log =[]
-  @@from_date = DateTime.now.new_offset(0/24.0)-0.5
+  @@from_date = DateTime.now.new_offset(0/24.0)
   @@fid=0
+
+  def self.check_selected_threads; BCTalkParserHelper.check_selected_threads; end
 
 
   def self.check_forums(pages_back=1, need_parse_threads=false)
@@ -30,9 +33,12 @@ class BCTalkParser
 
   end
 
-  def self.downl_forum_pages_for_last_day(fid, start_page=1) 
+  def self.downl_forum_pages_for_last_day(fid, start_page=1, hours=12) 
+    
+    @@from_date = DateTime.now.new_offset(0/24.0)-hours/24.0
     p "from #{@@from_date.strftime("%F %H:%M:%S")} to #{DateTime.now.new_offset(0/24.0).strftime("%F %H:%M:%S")}"
     @@fid=fid
+
     
     start_page.upto(start_page+20) do |pg|
       next if pg<1
@@ -124,10 +130,10 @@ class BCTalkParser
         end
         #break if data[:first_post_date]<@@from_date rescue "[error] fdate <start_date"
       end      
-      planned_str=downl_pages.map { |pp| "<#{pp[0]}*#{pp[1]} #{ pp[2] ? pp[2].strftime('%d*%H:%M:%S') : 'nil'}>" }.join(', ')
+      planned_str=downl_pages.map { |pp| "<#{pp[0]}*#{pp[1]} #{ pp[2] ? pp[2].strftime('%d**%H:%M:%S') : 'nil'}>" }.join(', ')
 
       p "[#{idx} load_thr #{tid} last:#{page_and_num}".ljust(40)+
-      "upd: #{thr[:updated].strftime("%d_%H:%M:%S") }]".ljust(20)+
+      "upd: #{thr[:updated].strftime("%d**%H:%M:%S") }]".ljust(20)+
       "planned:#{planned_str.ljust(40)}  down:#{res} stars:#{stars}" if downl_pages.size>0
     end
 

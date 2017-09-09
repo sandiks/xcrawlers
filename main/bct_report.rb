@@ -9,10 +9,11 @@ class BctReport
   SID = 9
   THREAD_PAGE_SIZE =20
 
-  def self.gen_threads_with_stars_users(fid, type='f')
+  def self.gen_threads_with_stars_users(fid, type='f', time =12)
     rank =3
+    time =6 if time==0
     
-    from=DateTime.now.new_offset(0/24.0)-0.5
+    from=DateTime.now.new_offset(0/24.0)-time/24.0
     to=DateTime.now.new_offset(0/24.0)
 
     title = DB[:forums].filter(siteid:SID,fid:fid).first[:title] rescue "no forum"
@@ -23,37 +24,52 @@ class BctReport
     posts = DB[:posts].join(:threads, :tid=>:tid).join(:users, :uid=>:posts__addeduid)
     .filter(Sequel.lit("posts.siteid=? and threads.fid=? and addeddate > ? and addeddate < ? and rank>=?", SID, fid, from, from+1,rank))
     .order(:addeddate)
-    .select(:addeduid, :addedby, :addeddate, :posts__tid).all
+    .select(:addeduid, :addedby, :addeddate, :posts__tid, :rank).all
+
+    p "forum:#{title} posts:#{posts.size}"
 
     ##generate
-    bold = type =='f' ? "[b]" : "**"
-    bold_end = type =='f' ? "[/b]" : "**"
+    is_forum = type =='f' 
+    bold =  is_forum ? "[b]" : "**"
+    bold_end = is_forum ? "[/b]" : "**"
 
 
     out = []
-    out<<"#{bold}forum:#{title} from: #{from.strftime("%F %H:%M")}  to: #{to.strftime("%F %H:%M")}#{bold_end}"
+    
+    is_forum ? out<<"#{bold}forum: #{title}#{bold_end}" : out<<"Most babble threads from \"#{bold}#{title}#{bold_end}\""
+    out<<"#{bold}#{from.strftime("%F %H:%M")}  -  #{to.strftime("%F %H:%M")}#{bold_end}"
     out<<"------------"
     
     idx=0
     #posts.group_by{|h| h[:tid]}.sort_by{|k,v| -v.inject(0) { |sum, p| sum+(uranks[p[:addedby]]||0) } }.take(25).each do |tid, posts| 
-    posts.group_by{|h| h[:tid]}.sort_by{|k,pp| -pp.group_by{|pp| pp[:addedby]}.size }.take(30).each do |tid, posts| 
+    posts.group_by{|h| h[:tid]}.sort_by{|k,pp| -pp.group_by{|pp| pp[:addedby]}.size }.take(25).each do |tid, th_posts| 
             thr_title = threads[tid]||tid
             resps = threads_responses[tid]||0
             page_and_num = PageUtil.calc_last_page(resps+1,20)
             lpage = (page_and_num[0]-1)*40 rescue 0
             
             url = "https://bitcointalk.org/index.php?topic=#{tid}.#{lpage}"
-            out<<"#{bold}#{idx+=1} #{thr_title}#{bold_end} #{url}"        
-             posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -uranks[uname]}.each  do |uname,uposts|
-              #times = uposts.map { |po|  po[:addeddate].strftime("%k:%M")}.join(",")
-              posts_count = uposts.size
-              out<<"#{bold}#{uname}#{bold_end} [#{print_rank(uranks[uname])}] [#{posts_count} posts]"
-             end 
+
+            count = th_posts.size
+            out<<"#{bold}#{idx+=1} #{thr_title}#{bold_end} #{url}"
+            count11=100* th_posts.count{|pp| pp[:rank]==11}/count.to_f  
+            count5 =100* th_posts.count{|pp| pp[:rank]==5}/count.to_f  
+            count4 =100* th_posts.count{|pp| pp[:rank]==4}/count.to_f  
+            count3 =100* th_posts.count{|pp| pp[:rank]==3}/count.to_f 
+            if is_forum
+              out<< "count:#{count} \n  legend: #{'%.1f' %count11}% \n 5 stars #{'%.1f' %count5}% \n 4 stars #{'%.1f' %count4}% \n 3 stars #{'%.1f' %count3}%"  
+            else
+              out<< "count:#{count} legend: #{'%.1f' %count11}%  5 stars #{'%.1f' %count5}% 4 stars #{'%.1f' %count4}%  3 stars #{'%.1f' %count3}%"  
+            end
+
+             th_posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -pp[:rank]}.each  do |uname,uposts|
+              out<<"#{bold}#{uname} (#{print_rank(uranks[uname])})#{bold_end} [#{uposts.size} posts]"
+             end if false
             out<<"------------"
         
     end
 
-    if true #active users
+    if false #is_forum  #active users
       top = 25
 
       posts = DB[:posts].join(:threads, :tid=>:tid).join(:users, :uid=>:posts__addeduid)
@@ -63,16 +79,18 @@ class BctReport
       posts.group_by{|pp| pp[:addedby]}.sort_by{|uname,pp| -pp.size}.take(top).each  do |uname,uposts|
         out<<"#{bold}#{uname}#{bold_end} (#{uranks[uname]}) posts:#{uposts.size}"
       end
-    end  
+    end 
 
-    fpath =File.dirname(__FILE__) + "/rep#{fid}.html"
+    rep_name = is_forum ? "for_rep" : "teleg_rep" 
+
+    fpath ="../report/#{rep_name}_#{fid}.html"
     File.write(fpath, out.join("\n"))
     #system "chromium '#{fpath}'"
 
   end
   
   def self.print_rank(rank)
-    rank==11 ? "**legend**" : "#{rank} stars"
+    rank==11 ? "**legend**" : "#{rank}"
   end
 
   def self.analyse_users_posts_for_thread(tid)

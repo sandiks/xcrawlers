@@ -96,10 +96,10 @@ class BCTalkParserHelper
 
         if pp==last_db_page
           p "---tid:#{tid} p:#{pp} loading...(last_db == last) "
-          posts = parse_thread_from_html(tid, pp, max_page_html)
+          posts = BCTalkParser.parse_thread_from_html(tid, pp, max_page_html)
         else
           p "---tid:#{tid} p:#{pp} loading... "
-          posts = parse_thread_page(tid, pp)
+          posts = BCTalkParser.parse_thread_page(tid, pp)
         end
 
         update_thread_attributes(tid, posts.last[:addeddate]) if pp==last
@@ -141,4 +141,4 @@ class BCTalkParserHelper
   end  
 end
 
-BCTalkParserHelper.list_forums
+#BCTalkParserHelper.list_forums

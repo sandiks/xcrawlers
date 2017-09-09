@@ -12,3 +12,4 @@ gem 'mechanize'
 gem 'cinch'
 gem 'rufus-scheduler'
 gem "telegram-bot-ruby"
+gem "dotenv"
