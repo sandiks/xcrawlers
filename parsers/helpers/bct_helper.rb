@@ -3,11 +3,13 @@ require 'open-uri'
 require 'parallel'
 require_relative  '../../helpers/helper'
 require_relative  '../../helpers/repo'
+require_relative  '../bct_parser'
 
 class BCTalkParserHelper
   @@need_save= true
   SID=9
   DB = Repo.get_db
+  THREAD_PAGE_SIZE =20
 
 
   def self.list_forums
@@ -70,7 +72,10 @@ class BCTalkParserHelper
     puts @@log
   end
 
-
+  def self.get_link(tid, page=1)
+    pp = (page>1 ? "#{(page-1)*THREAD_PAGE_SIZE}" : "0")
+    link = "https://bitcointalk.org/index.php?topic=#{tid}.#{pp}"
+  end
 
   def self.load_thread(tid, load_pages_back=1)
     p "downl thread tid:#{tid} pages_back:#{load_pages_back} use tor:false"
@@ -80,11 +85,12 @@ class BCTalkParserHelper
 
     pages = DB[:tpages].filter(siteid:SID, tid:tid).to_hash(:page,:postcount)
     max_page = pages.max_by{|k,v| k}
-    last_db_page = max_page.nil? ? 1: max_page.first
+    last_db_page = max_page ? max_page.first : 1
 
     link = get_link(tid,last_db_page)
     max_page_html = Nokogiri::HTML(download_page(link))
     last = (detect_last_page(max_page_html))||1
+    last = last_db_page if last<last_db_page
     #p "***********last_db_page:#{last_db_page} last_site:#{last}"  #if last>3000
 
     counter=1
@@ -96,13 +102,13 @@ class BCTalkParserHelper
 
         if pp==last_db_page
           p "---tid:#{tid} p:#{pp} loading...(last_db == last) "
-          posts = BCTalkParser.parse_thread_from_html(tid, pp, max_page_html)
+          posts = BCTalkParser.set_opt({rank:1}).parse_thread_from_html(tid, pp, max_page_html)
         else
           p "---tid:#{tid} p:#{pp} loading... "
-          posts = BCTalkParser.parse_thread_page(tid, pp)
+          posts = BCTalkParser.set_opt({rank:1}).parse_thread_page(tid, pp)
         end
 
-        update_thread_attributes(tid, posts.last[:addeddate]) if pp==last
+        update_thread_attributes(tid) if pp==last
       end
     end
 
@@ -130,9 +136,9 @@ class BCTalkParserHelper
     end
   end
 
-  def self.update_thread_attributes(tid,last_post_date)
+  def self.update_thread_attributes(tid)
     #p "update last date #{last_post_date}"
-    rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: last_post_date)
+    #rec = DB[:threads].where(siteid:SID, tid:tid).update(updated: DateTime.now.new_offset(0.0/24))
   end
 
   def self.detect_last_page(doc)
@@ -142,3 +148,5 @@ class BCTalkParserHelper
 end
 
 #BCTalkParserHelper.list_forums
+#BCTalkParserHelper.load_thread(2027544,2)
+#BCTalkParser.parse_thread_page(2027544,10)

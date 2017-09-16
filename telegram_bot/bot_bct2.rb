@@ -39,11 +39,8 @@ def run_bot
         if fid ==0 
           text = "command 'forum' has errors"
         else
-          p  "[info] run report for #{fid}"
-
           #BctReport.gen_threads_with_stars_users(fid,'t',4)
-          text = File.readlines("../report/teleg_rep#{fid}.html").join("") rescue "file err"
-          #text = "fffffffffffffffffffffforum #{fid}"
+          text = File.readlines("../report/teleg_rep_#{fid}.html").join("") rescue "file err"
         end
       
       else

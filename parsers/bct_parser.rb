@@ -4,7 +4,6 @@ require 'parallel'
 require_relative  '../helpers/helper'
 require_relative  '../helpers/repo'
 require_relative  '../helpers/page_utils'
-require_relative  'helpers/bct_helper'
 
 #Powered by SMF 1.1.19
 
@@ -12,14 +11,16 @@ class BCTalkParser
   DB = Repo.get_db
   SID = 9
   THREAD_PAGE_SIZE =20
-  SAVE_BODY=false
 
   @@need_save= true
   @@log =[]
   @@from_date = DateTime.now.new_offset(0/24.0)
   @@fid=0
 
-  def self.check_selected_threads; BCTalkParserHelper.check_selected_threads; end
+  @@options={}
+
+  #def self.check_selected_threads; BCTalkParserHelper.check_selected_threads; end
+  def self.set_opt(opts={}); @@options = opts; return self; end
 
 
   def self.check_forums(pages_back=1, need_parse_threads=false)
@@ -33,7 +34,7 @@ class BCTalkParser
 
   end
 
-  def self.downl_forum_pages_for_last_day(fid, start_page=1, hours=12) 
+  def self.downl_forum_pages_for_time(fid, start_page=1, hours=12) 
     
     @@from_date = DateTime.now.new_offset(0/24.0)-hours/24.0
     p "from #{@@from_date.strftime("%F %H:%M:%S")} to #{DateTime.now.new_offset(0/24.0).strftime("%F %H:%M:%S")}"
@@ -96,7 +97,7 @@ class BCTalkParser
 
   def self.load_forum_threads(fid, page_threads, old_thread_resps)
   
-    Parallel.map_with_index(page_threads,:in_threads=>3) do |thr,idx|
+    Parallel.map_with_index(page_threads,:in_threads=>2) do |thr,idx|
     #page_threads.each do |thr|
       tid = thr[:tid]
 
@@ -115,8 +116,8 @@ class BCTalkParser
       stars=0
       downl_pages.each do |pp|   
         res<<pp[0]
+        
         loop do
-
           begin
             data = parse_thread_page(tid, pp[0]) 
             stars += data[:stars]||0
@@ -246,15 +247,15 @@ class BCTalkParser
       end
 
       #parse signature
-      if sign_tr
-        
-        links = sign_tr.css('a')
+      if sign_tr && (links = sign_tr.css('a'))
+
         grouped_domains = links.group_by do |ll|
           link = ll['href'].gsub(' ','').strip
           begin
             URI.parse( link ).host.split('.').last(2).join('.') 
           rescue
-            link.sub(/^https?\:\/\/(www.)?/,'').split('/').first.strip
+            dmn = link.sub(/^https?\:\/\/(www.)?/,'').split('/').first
+            dmn ? dmn.strip : "bitcointalk.org/error"
           end
         end
 
@@ -276,7 +277,8 @@ class BCTalkParser
       post_date = parse_post_date(post_date_str)
 
       body=nil
-      if rank>3
+      downl_rank = @@options[:rank]||3
+      if rank>=downl_rank
         body = td2.css('div.post').inner_html.strip
         body=remove_quote(body)
       end
