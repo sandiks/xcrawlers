@@ -20,7 +20,8 @@ when 'check_forums';    BCTalkParser.check_forums(first) #pages_back
 when 'selected';        BCTalkParser.check_selected_threads
 when 'parse_time';      BCTalkParser.downl_forum_pages_for_time(first,1,second)
 when 'parse_f_p_h';     BCTalkParser.downl_forum_pages_for_time(first,second,third)
-when 'pf';              BCTalkParser.parse_forum(first,second,false) #if true #need_parse_forum(first,9)
+when 'parse_forum';     BCTalkParser.parse_forum(first,second,true) #if true #need_parse_forum(first,9)
+when 'parse_forum_diff2'; BCTalkParser.set_opt({thread_posts_diff:2,rank:2}).parse_forum(first,second,true) # fid page need_dowl
 ##report
 when 'repf';            BctReport.gen_threads_with_stars_users(first,'f', second) ##ruby bctalk.rb rep 159 f|t
 when 'rept';            BctReport.gen_threads_with_stars_users(first,'t', second) ##ruby bctalk.rb rep 159 f|t

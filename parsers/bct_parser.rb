@@ -36,6 +36,7 @@ class BCTalkParser
 
   def self.downl_forum_pages_for_time(fid, start_page=1, hours=12) 
     
+    set_opt({rank:4})
     @@from_date = DateTime.now.new_offset(0/24.0)-hours/24.0
     p "from #{@@from_date.strftime("%F %H:%M:%S")} to #{DateTime.now.new_offset(0/24.0).strftime("%F %H:%M:%S")}"
     @@fid=fid
@@ -160,7 +161,7 @@ class BCTalkParser
       lp_date = tpages[lp_num][1]
       need_downl_pages = lp_date && lp_date.to_datetime> @@from_date
     end
-    downl_pages<<[lp_num,mc0,lp_date] if lp_post_count-mc0>=get_diff
+    downl_pages<<[lp_num,mc0,lp_date] if lp_post_count-mc0>=  (@@options[:thread_posts_diff]||get_diff)
 
     #added pre-last pages
     if need_downl_pages
