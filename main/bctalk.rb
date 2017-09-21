@@ -8,9 +8,9 @@ first = ARGV[1].to_i
 second = ARGV[2].to_i
 third = ARGV[3].to_i
 
+##    159  Announcements (Altcoins)
 ##    67 altcoin discussion
 ##    72 форки  
-##    159  Announcements (Altcoins)
 ##    238 bounty (Altcoins)
 
 case action
@@ -25,7 +25,7 @@ when 'parse_forum_diff2'; BCTalkParser.set_opt({thread_posts_diff:2,rank:2}).par
 ##report
 when 'repf';            BctReport.gen_threads_with_stars_users(first,'f', second) ##ruby bctalk.rb rep 159 f|t
 when 'rept';            BctReport.gen_threads_with_stars_users(first,'t', second) ##ruby bctalk.rb rep 159 f|t
-when 'bounty';          BctReport.print_groupped_by_bounty(first) 
+when 'bounty';          BctReport.print_grouped_by_bounty(first) 
 when 'topu';            BctReport.top_active_users_for_forum(first) ##ruby bctalk.rb topu 159
 when 'thread_users';    BctReport.analyse_users_posts_for_thread(first) 
 when 'clean_err';       File.write('BCT_THREADS_ERRORS', '') 

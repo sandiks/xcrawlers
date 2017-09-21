@@ -156,7 +156,7 @@ class BctReport
     File.write(fpath, res.join("\n"))
 
   end   
-  def self.print_grouped_by_bounty(fid, hours=12)
+  def self.print_grouped_by_bounty(fid, hours=24)
 
     title = DB[:forums].filter(siteid:SID,fid:fid).select_map(:title)
     p "report print_grouped_by_bounty forum:#{title}"
@@ -184,8 +184,9 @@ class BctReport
       end
 
     end  
+    fidd = fid.join('_') rescue fid
 
-    fpath ="../report/grouped_bounties_#{fid.join('_')}.html"
+    fpath ="../report/grouped_bounties_#{fidd}.html"
     File.write(fpath, res.join("\n"))
 
   end        
